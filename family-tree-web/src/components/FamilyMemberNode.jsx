@@ -59,7 +59,7 @@ export default function FamilyMemberNode({ id, data }) {
         ×
       </button>
 
-      {/* Editable name — nodrag so touch/click doesn't start node drag */}
+      {/* Editable name — input has nodrag so selecting text doesn't start node drag */}
       {editing ? (
         <input
           ref={inputRef}
@@ -71,7 +71,7 @@ export default function FamilyMemberNode({ id, data }) {
         />
       ) : (
         <div
-          className="node-name nodrag"
+          className="node-name"
           onDoubleClick={() => setEditing(true)}
           onClick={() => {
             if ('ontouchstart' in window) setEditing(true);

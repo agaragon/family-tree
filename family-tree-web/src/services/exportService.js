@@ -45,3 +45,16 @@ export function copyShareLinkToClipboard(nodes, edges, viewport) {
   const url = `${window.location.origin}${window.location.pathname}?${URL_PARAM}=${encodeURIComponent(JSON.stringify(payload))}`;
   return navigator.clipboard.writeText(url);
 }
+
+export function exportToJson(nodes, edges, viewport) {
+  const payload = buildSharePayload(nodes, edges, viewport);
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {
+    type: 'application/json',
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'family-tree.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}

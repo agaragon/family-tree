@@ -35,6 +35,7 @@ import {
 import {
   exportToPdf,
   copyShareLinkToClipboard,
+  exportToJson,
 } from './services/exportService';
 import './App.css';
 
@@ -42,6 +43,7 @@ const initialData = loadInitialData();
 
 function FamilyTreeCanvas() {
   const reactFlowWrapper = useRef(null);
+  const dragJustEndedRef = useRef(false);
   const { screenToFlowPosition } = useReactFlow();
   const [nodes, setNodes, onNodesChange] = useNodesState(initialData.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialData.edges);
@@ -90,6 +92,10 @@ function FamilyTreeCanvas() {
 
   const onPaneClick = useCallback(
     (event) => {
+      if (dragJustEndedRef.current) {
+        dragJustEndedRef.current = false;
+        return;
+      }
       const position = screenToFlowPosition({
         x: event.clientX,
         y: event.clientY,
@@ -110,6 +116,10 @@ function FamilyTreeCanvas() {
     },
     [screenToFlowPosition, setNodes, deleteNode, renameNode],
   );
+
+  const onNodeDragEnd = useCallback(() => {
+    dragJustEndedRef.current = true;
+  }, []);
 
   const onConnect = useCallback(
     (params) => {
@@ -204,6 +214,10 @@ function FamilyTreeCanvas() {
     );
   }, [nodes, edges, viewport]);
 
+  const exportJson = useCallback(() => {
+    exportToJson(nodes, edges, viewport);
+  }, [nodes, edges, viewport]);
+
   return (
     <div
       className="tree-frame"
@@ -217,6 +231,7 @@ function FamilyTreeCanvas() {
           edges={edgesForFlow}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
+          onNodeDragEnd={onNodeDragEnd}
           edgeTypes={edgeTypes}
           onConnect={onConnect}
           onPaneClick={onPaneClick}
@@ -237,6 +252,10 @@ function FamilyTreeCanvas() {
           Delete para remover conexão &middot;{' '}
           <button type="button" className="export-pdf-btn" onClick={exportLink}>
             Exportar link
+          </button>
+          &middot;{' '}
+          <button type="button" className="export-pdf-btn" onClick={exportJson}>
+            Exportar JSON
           </button>
           &middot;{' '}
           <select
