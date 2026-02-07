@@ -40,9 +40,21 @@ export default function FamilyMemberNode({ id, data }) {
   const isDefaultName =
     !trimmed || trimmed === NEW_MEMBER_LABEL || trimmed === DEFAULT_LABEL;
   const isCompact = !editing && !isDefaultName;
+  const scale = typeof data.nodeSize === 'number' ? data.nodeSize : 1;
+  const [padV, padH] = isCompact ? [8, 12] : [12, 18];
+  const minW = isCompact ? 90 : 120;
+  const nodeStyle = {
+    background: data.nodeColor,
+    borderColor: data.nodeColor?.startsWith('rgba') ? undefined : data.nodeColor,
+    minWidth: `${minW * scale}px`,
+    padding: `${padV * scale}px ${padH * scale}px`,
+  };
 
   return (
-    <div className={`family-node${isCompact ? ' family-node--compact' : ''}`}>
+    <div
+      className={`family-node${isCompact ? ' family-node--compact' : ''}`}
+      style={nodeStyle}
+    >
       {/* Top handle — connect as child */}
       <Handle id="target" type="target" position={Position.Top} />
 

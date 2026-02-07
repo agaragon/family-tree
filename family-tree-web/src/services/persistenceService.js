@@ -7,6 +7,7 @@ import {
   BG_STORAGE_KEY,
   URL_PARAM,
   defaultViewport,
+  defaultSettings,
   DEFAULT_LABEL,
 } from '../domain';
 import { syncIdFromNodes } from '../domain/idGenerator';
@@ -20,6 +21,17 @@ export function clearUrlTreeParam() {
   }
 }
 
+function parseSettings(data) {
+  const s = data.settings;
+  if (!s || typeof s !== 'object') return { ...defaultSettings };
+  return {
+    nodeSize: typeof s.nodeSize === 'number' ? s.nodeSize : defaultSettings.nodeSize,
+    nodeColor: typeof s.nodeColor === 'string' ? s.nodeColor : defaultSettings.nodeColor,
+    edgeStrokeWidth: typeof s.edgeStrokeWidth === 'number' ? s.edgeStrokeWidth : defaultSettings.edgeStrokeWidth,
+    edgeStrokeColor: typeof s.edgeStrokeColor === 'string' ? s.edgeStrokeColor : defaultSettings.edgeStrokeColor,
+  };
+}
+
 function parsePayload(data, fromSharedLink = false) {
   const nodes = data.nodes || [];
   const edges = data.edges || [];
@@ -31,8 +43,9 @@ function parsePayload(data, fromSharedLink = false) {
           zoom: data.viewport.zoom,
         }
       : defaultViewport;
+  const settings = parseSettings(data);
   syncIdFromNodes(nodes);
-  return { nodes, edges, viewport, fromSharedLink };
+  return { nodes, edges, viewport, settings, fromSharedLink };
 }
 
 export function loadInitialData() {
@@ -44,14 +57,14 @@ export function loadInitialData() {
     }
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw)
-      return { nodes: [], edges: [], viewport: defaultViewport, fromSharedLink: false };
+      return { nodes: [], edges: [], viewport: defaultViewport, settings: { ...defaultSettings }, fromSharedLink: false };
     return parsePayload(JSON.parse(raw));
   } catch {
-    return { nodes: [], edges: [], viewport: defaultViewport, fromSharedLink: false };
+    return { nodes: [], edges: [], viewport: defaultViewport, settings: { ...defaultSettings }, fromSharedLink: false };
   }
 }
 
-export function savePayload(nodes, edges, viewport) {
+export function savePayload(nodes, edges, viewport, settings) {
   const payload = {
     nodes: nodes.map((n) => ({
       id: n.id,
@@ -61,6 +74,7 @@ export function savePayload(nodes, edges, viewport) {
     })),
     edges,
     viewport: { x: viewport.x, y: viewport.y, zoom: viewport.zoom },
+    settings: settings ? { ...settings } : { ...defaultSettings },
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 }
@@ -78,7 +92,7 @@ export function saveBackgroundImage(dataUrl) {
   else localStorage.removeItem(BG_STORAGE_KEY);
 }
 
-export function buildSharePayload(nodes, edges, viewport) {
+export function buildSharePayload(nodes, edges, viewport, settings) {
   return {
     nodes: nodes.map((n) => ({
       id: n.id,
@@ -88,5 +102,6 @@ export function buildSharePayload(nodes, edges, viewport) {
     })),
     edges,
     viewport: { x: viewport.x, y: viewport.y, zoom: viewport.zoom },
+    settings: settings ? { ...settings } : { ...defaultSettings },
   };
 }

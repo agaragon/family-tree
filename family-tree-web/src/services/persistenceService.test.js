@@ -5,8 +5,7 @@ import {
   clearStoredTree,
   loadInitialData,
 } from './persistenceService.js';
-
-const defaultViewport = { x: 0, y: 0, zoom: 1 };
+import { defaultViewport, defaultSettings } from '../domain/domain.js';
 
 const storage = {};
 const mockLocalStorage = {
@@ -38,6 +37,7 @@ describe('persistenceService', () => {
         nodes: [{ id: 'member-1', type: 'familyMember', position: { x: 10, y: 20 }, data: { label: 'Maria' } }],
         edges: [],
         viewport: defaultViewport,
+        settings: { ...defaultSettings },
       });
     });
 
@@ -97,6 +97,7 @@ describe('persistenceService', () => {
         nodes: [],
         edges: [],
         viewport: defaultViewport,
+        settings: { ...defaultSettings },
         fromSharedLink: false,
       });
     });

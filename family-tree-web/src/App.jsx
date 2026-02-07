@@ -15,10 +15,13 @@ import GenerationLinesNode from './components/GenerationLinesNode';
 import ParentForkEdge from './components/ParentForkEdge';
 import {
   defaultViewport,
+  defaultSettings,
   NODE_TYPES,
   ROW_HEIGHT,
   NEW_MEMBER_LABEL,
   DEFAULT_LABEL,
+  NEW_MEMBER_NODE_HALF_WIDTH,
+  NEW_MEMBER_NODE_HALF_HEIGHT,
 } from './domain';
 import { nextMemberId, resetIdGenerator } from './domain/idGenerator';
 import {
@@ -49,6 +52,7 @@ const isMobileView = () =>
 function FamilyTreeCanvas() {
   const reactFlowWrapper = useRef(null);
   const dragJustEndedRef = useRef(false);
+  const connectionJustEndedRef = useRef(false);
   const { screenToFlowPosition, fitView } = useReactFlow();
   const openFromSharedLinkOnMobile =
     initialData.fromSharedLink && isMobileView();
@@ -57,11 +61,15 @@ function FamilyTreeCanvas() {
   const [viewport, setViewport] = useState(
     openFromSharedLinkOnMobile ? defaultViewport : initialData.viewport,
   );
+  const [settings, setSettings] = useState(
+    initialData.settings ? { ...initialData.settings } : { ...defaultSettings },
+  );
   const [bgImage, setBgImage] = useState(loadBackgroundImage);
+  const [advancedSettingsOpen, setAdvancedSettingsOpen] = useState(false);
 
   useEffect(() => {
-    savePayload(nodes, edges, viewport);
-  }, [nodes, edges, viewport]);
+    savePayload(nodes, edges, viewport, settings);
+  }, [nodes, edges, viewport, settings]);
 
   useEffect(() => {
     clearUrlTreeParam();
@@ -119,8 +127,15 @@ function FamilyTreeCanvas() {
   const edgeTypes = useMemo(() => ({ fork: ParentForkEdge }), []);
 
   const edgesForFlow = useMemo(
-    () => enrichEdgesWithJunctions(nodes, edges),
-    [nodes, edges],
+    () =>
+      enrichEdgesWithJunctions(nodes, edges).map((e) => ({
+        ...e,
+        style: {
+          stroke: settings.edgeStrokeColor,
+          strokeWidth: settings.edgeStrokeWidth,
+        },
+      })),
+    [nodes, edges, settings.edgeStrokeColor, settings.edgeStrokeWidth],
   );
 
   const onPaneClick = useCallback(
@@ -129,10 +144,18 @@ function FamilyTreeCanvas() {
         dragJustEndedRef.current = false;
         return;
       }
-      const position = screenToFlowPosition({
+      if (connectionJustEndedRef.current) {
+        connectionJustEndedRef.current = false;
+        return;
+      }
+      const flowPos = screenToFlowPosition({
         x: event.clientX,
         y: event.clientY,
       });
+      const position = {
+        x: flowPos.x - NEW_MEMBER_NODE_HALF_WIDTH,
+        y: flowPos.y - NEW_MEMBER_NODE_HALF_HEIGHT,
+      };
       setNodes((nds) => [
         ...nds,
         {
@@ -162,14 +185,21 @@ function FamilyTreeCanvas() {
             ...params,
             type: 'smoothstep',
             markerEnd: { type: MarkerType.ArrowClosed },
-            style: { stroke: '#6b4c3b', strokeWidth: 2 },
+            style: {
+              stroke: settings.edgeStrokeColor,
+              strokeWidth: settings.edgeStrokeWidth,
+            },
           },
           eds,
         ),
       );
     },
-    [setEdges],
+    [setEdges, settings.edgeStrokeColor, settings.edgeStrokeWidth],
   );
+
+  const onConnectEnd = useCallback(() => {
+    connectionJustEndedRef.current = true;
+  }, []);
 
   const onKeyDown = useCallback(
     (event) => {
@@ -207,6 +237,8 @@ function FamilyTreeCanvas() {
         onRename: renameNode,
         parentLabels: getParentLabels(n.id),
         generation: generations[n.id],
+        nodeSize: settings.nodeSize,
+        nodeColor: settings.nodeColor,
       },
     }));
     const linesNode = {
@@ -218,7 +250,7 @@ function FamilyTreeCanvas() {
       selectable: false,
     };
     return [linesNode, ...withCallbacks];
-  }, [familyNodes, edges, generations, deleteNode, renameNode, getParentLabels]);
+  }, [familyNodes, edges, generations, settings.nodeSize, settings.nodeColor, deleteNode, renameNode, getParentLabels]);
 
   const clearAll = useCallback(() => {
     if (
@@ -240,16 +272,16 @@ function FamilyTreeCanvas() {
   }, [pdfPaperSize]);
 
   const exportLink = useCallback(() => {
-    copyShareLinkToClipboard(nodes, edges, viewport).then(() =>
+    copyShareLinkToClipboard(nodes, edges, viewport, settings).then(() =>
       alert(
         'Link de compartilhamento copiado para a área de transferência',
       ),
     );
-  }, [nodes, edges, viewport]);
+  }, [nodes, edges, viewport, settings]);
 
   const exportJson = useCallback(() => {
-    exportToJson(nodes, edges, viewport);
-  }, [nodes, edges, viewport]);
+    exportToJson(nodes, edges, viewport, settings);
+  }, [nodes, edges, viewport, settings]);
 
   const fileInputRef = useRef(null);
   const onImportBg = useCallback(() => {
@@ -299,6 +331,8 @@ function FamilyTreeCanvas() {
           onNodeDragEnd={onNodeDragEnd}
           edgeTypes={edgeTypes}
           onConnect={onConnect}
+          onConnectEnd={onConnectEnd}
+          connectionRadius={500}
           onPaneClick={onPaneClick}
           onViewportChange={({ x, y, zoom }) => setViewport({ x, y, zoom })}
           defaultViewport={
@@ -321,6 +355,79 @@ function FamilyTreeCanvas() {
           Delete para remover conexão
         </div>
         <div className="instructions-actions">
+          <button
+            type="button"
+            className="export-pdf-btn"
+            onClick={() => setAdvancedSettingsOpen((o) => !o)}
+          >
+            Configurações avançadas
+          </button>
+          {advancedSettingsOpen && (
+            <div className="advanced-settings-panel">
+              <label>
+                Tamanho do nó
+                <input
+                  type="number"
+                  min="0.5"
+                  max="2"
+                  step="0.1"
+                  value={settings.nodeSize}
+                  onChange={(e) =>
+                    setSettings((s) => ({
+                      ...s,
+                      nodeSize: Math.max(0.5, Math.min(2, Number(e.target.value) || 1)),
+                    }))
+                  }
+                />
+              </label>
+              <label>
+                Cor do nó
+                <input
+                  type="color"
+                  value={
+                    settings.nodeColor.startsWith('rgba')
+                      ? '#ffffff'
+                      : settings.nodeColor
+                  }
+                  onChange={(e) =>
+                    setSettings((s) => ({ ...s, nodeColor: e.target.value }))
+                  }
+                />
+              </label>
+              <label>
+                Espessura da linha
+                <input
+                  type="number"
+                  min="1"
+                  max="8"
+                  value={settings.edgeStrokeWidth}
+                  onChange={(e) =>
+                    setSettings((s) => ({
+                      ...s,
+                      edgeStrokeWidth: Math.max(1, Math.min(8, Number(e.target.value) || 2)),
+                    }))
+                  }
+                />
+              </label>
+              <label>
+                Cor da linha
+                <input
+                  type="color"
+                  value={settings.edgeStrokeColor}
+                  onChange={(e) =>
+                    setSettings((s) => ({ ...s, edgeStrokeColor: e.target.value }))
+                  }
+                />
+              </label>
+              <button
+                type="button"
+                className="export-pdf-btn"
+                onClick={() => setSettings({ ...defaultSettings })}
+              >
+                Restaurar padrões
+              </button>
+            </div>
+          )}
           <button type="button" className="export-pdf-btn" onClick={onImportBg}>
             Importar fundo
           </button>

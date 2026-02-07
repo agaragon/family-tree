@@ -40,14 +40,14 @@ export async function exportToPdf(containerRef, paperSize = 'a1') {
   pdf.save('family-tree.pdf');
 }
 
-export function copyShareLinkToClipboard(nodes, edges, viewport) {
-  const payload = buildSharePayload(nodes, edges, viewport);
+export function copyShareLinkToClipboard(nodes, edges, viewport, settings) {
+  const payload = buildSharePayload(nodes, edges, viewport, settings);
   const url = `${window.location.origin}${window.location.pathname}?${URL_PARAM}=${encodeURIComponent(JSON.stringify(payload))}`;
   return navigator.clipboard.writeText(url);
 }
 
-export function exportToJson(nodes, edges, viewport) {
-  const payload = buildSharePayload(nodes, edges, viewport);
+export function exportToJson(nodes, edges, viewport, settings) {
+  const payload = buildSharePayload(nodes, edges, viewport, settings);
   const blob = new Blob([JSON.stringify(payload, null, 2)], {
     type: 'application/json',
   });
