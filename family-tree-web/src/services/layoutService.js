@@ -2,7 +2,67 @@
  * Layout service — single responsibility: compute generations and edge junctions.
  * Pure functions over nodes/edges; no side effects.
  */
-import { ROW_HEIGHT } from '../domain';
+import { NEW_MEMBER_NODE_HALF_WIDTH, NEW_MEMBER_NODE_HALF_HEIGHT } from '../domain';
+
+const MIN_H_GAP = 40;
+const MIN_V_GAP = 80;
+const NODE_WIDTH = NEW_MEMBER_NODE_HALF_WIDTH * 2;
+const NODE_HEIGHT = NEW_MEMBER_NODE_HALF_HEIGHT * 2;
+const COL_GAP = NODE_WIDTH + MIN_H_GAP;
+const ALIGN_ROW_HEIGHT = NODE_HEIGHT + MIN_V_GAP;
+
+/**
+ * Compute aligned positions for family nodes: one row per generation, symmetric columns.
+ * Returns { nodeId -> { x, y } }. Compact layout (no full-page stretch).
+ */
+export function computeAlignPositions(nodes, edges, generations) {
+  const familyNodes = nodes.filter((n) => n.type !== 'generationLines');
+  if (familyNodes.length === 0) return {};
+
+  const getParentIds = (id) =>
+    edges.filter((e) => e.target === id).map((e) => e.source).sort();
+
+  const byGen = {};
+  for (const n of familyNodes) {
+    const g = generations[n.id] ?? 0;
+    if (!byGen[g]) byGen[g] = [];
+    byGen[g].push(n);
+  }
+
+  const result = {};
+  for (const g of Object.keys(byGen).map(Number).sort((a, b) => a - b)) {
+    const row = byGen[g];
+    row.sort((a, b) => {
+      const pa = getParentIds(a.id).join(',');
+      const pb = getParentIds(b.id).join(',');
+      if (pa !== pb) return pa.localeCompare(pb);
+      return a.id.localeCompare(b.id);
+    });
+    const n = row.length;
+    const totalWidth = (n - 1) * COL_GAP;
+    const startX = -totalWidth / 2;
+    row.forEach((node, i) => {
+      result[node.id] = { x: startX + i * COL_GAP, y: g * ALIGN_ROW_HEIGHT };
+    });
+  }
+
+  const xs = Object.values(result).map((p) => p.x);
+  const ys = Object.values(result).map((p) => p.y);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  const centerX = (minX + maxX) / 2;
+  const centerY = (minY + maxY) / 2;
+
+  for (const id of Object.keys(result)) {
+    result[id] = {
+      x: result[id].x - centerX,
+      y: result[id].y - centerY,
+    };
+  }
+  return result;
+}
 
 export function getGenerations(nodes, edges) {
   const gen = {};

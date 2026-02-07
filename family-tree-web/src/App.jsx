@@ -36,6 +36,7 @@ import {
 import {
   getGenerations,
   enrichEdgesWithJunctions,
+  computeAlignPositions,
 } from './services/layoutService';
 import {
   exportToPdf,
@@ -48,6 +49,23 @@ const initialData = loadInitialData();
 
 const isMobileView = () =>
   typeof window !== 'undefined' && window.innerWidth <= 768;
+
+const TOUR_SEEN_KEY = 'family-tree-tour-seen';
+
+const TOUR_STEPS = [
+  { title: 'Bem-vindo', text: 'Recomendamos fazer este tour para conhecer as funcionalidades. Você pode usar o site a qualquer momento; clique em "Parar Tour" para fechar.' },
+  { title: 'Adicionar membros', text: 'Clique em um espaço vazio do canvas para adicionar um novo membro.' },
+  { title: 'Editar nomes', text: 'Clique duas vezes no nome de um membro para editar (um clique em dispositivos touch). Enter confirma, Escape cancela.' },
+  { title: 'Remover membros', text: 'Clique no botão × no canto do nó para excluir um membro.' },
+  { title: 'Conectar pais e filhos', text: 'Arraste da alça inferior (fonte) de um pai até a alça superior (alvo) de um filho. Conecte dois pais ao mesmo filho para representar um casal.' },
+  { title: 'Remover conexões', text: 'Selecione uma aresta e pressione Delete ou Backspace.' },
+  { title: 'Reposicionar e navegar', text: 'Arraste os nós para organizar. Use o mouse ou toque para pan e zoom no canvas.' },
+  { title: 'Auto-salvamento', text: 'A árvore é salva automaticamente no armazenamento local.' },
+  { title: 'Compartilhar', text: 'Abra um link com a árvore codificada na URL para visualizar ou colaborar.' },
+  { title: 'Exportar', text: 'Exporte para PDF, copie o link de compartilhamento ou baixe a árvore em JSON.' },
+  { title: 'Fundo personalizado', text: 'Importe uma imagem de fundo (ex.: foto); ela fica só no seu dispositivo e não entra no link.' },
+  { title: 'Barra de ações', text: 'Alinhar: organiza nós por geração. Configurações avançadas: tamanho/cor dos nós e linhas. Importar fundo, Exportar link/JSON/PDF, tamanho do papel e Limpar árvore.' },
+];
 
 function FamilyTreeCanvas() {
   const reactFlowWrapper = useRef(null);
@@ -66,6 +84,14 @@ function FamilyTreeCanvas() {
   );
   const [bgImage, setBgImage] = useState(loadBackgroundImage);
   const [advancedSettingsOpen, setAdvancedSettingsOpen] = useState(false);
+  const [tourStep, setTourStep] = useState(() =>
+    typeof window !== 'undefined' && localStorage.getItem(TOUR_SEEN_KEY) ? 0 : 1,
+  );
+
+  const closeTour = useCallback(() => {
+    if (typeof window !== 'undefined') localStorage.setItem(TOUR_SEEN_KEY, '1');
+    setTourStep(0);
+  }, []);
 
   useEffect(() => {
     savePayload(nodes, edges, viewport, settings);
@@ -252,6 +278,17 @@ function FamilyTreeCanvas() {
     return [linesNode, ...withCallbacks];
   }, [familyNodes, edges, generations, settings.nodeSize, settings.nodeColor, deleteNode, renameNode, getParentLabels]);
 
+  const alignNodes = useCallback(() => {
+    const positions = computeAlignPositions(familyNodes, edges, generations);
+    setNodes((nds) =>
+      nds.map((n) =>
+        n.type === NODE_TYPES.GENERATION_LINES
+          ? n
+          : { ...n, position: positions[n.id] ?? n.position },
+      ),
+    );
+  }, [familyNodes, edges, generations, setNodes]);
+
   const clearAll = useCallback(() => {
     if (
       !window.confirm(
@@ -358,6 +395,20 @@ function FamilyTreeCanvas() {
           <button
             type="button"
             className="export-pdf-btn"
+            onClick={() => setTourStep(1)}
+          >
+            Fazer Tour
+          </button>
+          <button
+            type="button"
+            className="export-pdf-btn"
+            onClick={alignNodes}
+          >
+            Alinhar
+          </button>
+          <button
+            type="button"
+            className="export-pdf-btn"
             onClick={() => setAdvancedSettingsOpen((o) => !o)}
           >
             Configurações avançadas
@@ -456,6 +507,39 @@ function FamilyTreeCanvas() {
           </button>
         </div>
       </aside>
+
+      {tourStep > 0 && (
+        <div className="tour-overlay">
+          <div className="tour-dialog">
+            <div className="tour-content">
+              <h3>{TOUR_STEPS[tourStep - 1].title}</h3>
+              <p>{TOUR_STEPS[tourStep - 1].text}</p>
+            </div>
+            <div className="tour-footer">
+              <div className="tour-footer-nav">
+                <span className="tour-progress">{tourStep} / {TOUR_STEPS.length}</span>
+                <div className="tour-buttons">
+                  <button type="button" className="export-pdf-btn" onClick={() => setTourStep((s) => Math.max(1, s - 1))} disabled={tourStep === 1}>
+                    Anterior
+                  </button>
+                  {tourStep < TOUR_STEPS.length ? (
+                    <button type="button" className="export-pdf-btn" onClick={() => setTourStep((s) => s + 1)}>
+                      Próximo
+                    </button>
+                  ) : (
+                    <button type="button" className="export-pdf-btn" onClick={closeTour}>
+                      Fechar
+                    </button>
+                  )}
+                </div>
+              </div>
+              <button type="button" className="tour-stop-btn" onClick={closeTour}>
+                Parar Tour
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,55 @@
 # Family Tree
 
-A family tree web app built with React and Vite.
+A family tree web app built with React and Vite. Build and edit genealogical graphs with drag-and-drop nodes, parent-child connections, and various export options.
+
+## Features
+
+- **Add members** — Click on empty canvas space to add a new family member.
+- **Edit names** — Double-click a member's name to edit (single-click on touch devices). Press Enter to confirm, Escape to cancel.
+- **Delete members** — Click the × button on a member node.
+- **Connect parents and children** — Drag from the bottom handle (source) of a parent to the top handle (target) of a child. Connect two parents to the same child to represent a couple.
+- **Remove connections** — Select an edge and press Delete or Backspace.
+- **Reposition nodes** — Drag nodes to arrange the tree manually.
+- **Pan and zoom** — Use the mouse or touch to pan and zoom the canvas.
+- **Auto-save** — The tree is saved automatically to local storage.
+- **Share via URL** — Open a link with the tree encoded in the URL to view or collaborate; the app loads the shared tree on first visit.
+- **Export** — Export to PDF, copy a share link to the clipboard, or download the tree as JSON.
+- **Background image** — Import a custom background image (e.g. a photo); it is stored locally and not included in share links.
+
+## Instructions bar
+
+The instructions bar (sidebar) shows tips and action buttons.
+
+### Tips
+
+- **Same row = same generation** — Siblings and cousins are placed on the same horizontal line.
+- **Click to add member** — Click on empty canvas space.
+- **Double-click name to edit** — Or single-click on touch devices.
+- **Connect handles** — Drag from parent handles to child handles; two parents → one child = couple.
+- **Delete to remove connection** — Select an edge and press Delete or Backspace.
+
+### Actions
+
+| Button | Description |
+|--------|-------------|
+| **Alinhar** | Auto-align nodes by generation (repositions nodes into tidy rows). |
+| **Configurações avançadas** | Expand/collapse advanced settings panel. |
+| **Importar fundo** | Choose a background image from your device (not shared in links). |
+| **Exportar link** | Copy a shareable URL to the clipboard. |
+| **Exportar JSON** | Download the tree as a JSON file. |
+| **Paper size (A4 / A1 / A0)** | Select PDF page size before exporting. |
+| **Exportar PDF** | Export the visible tree as a PDF. |
+| **Limpar árvore** | Clear the entire tree (asks for confirmation; cannot be undone). |
+
+### Advanced settings
+
+When "Configurações avançadas" is expanded:
+
+- **Tamanho do nó** — Node size (0.5–2).
+- **Cor do nó** — Node fill color.
+- **Espessura da linha** — Edge stroke width (1–8).
+- **Cor da linha** — Edge stroke color.
+- **Restaurar padrões** — Reset all settings to defaults.
 
 ## Development
 
@@ -10,21 +59,21 @@ npm install
 npm run dev
 ```
 
-## Deploy to family-tree.programmingwitharagon.com
+## Deploy to your own domain
 
-The site is deployed to **family-tree.programmingwitharagon.com** using AWS (S3 + CloudFront + Route53) and Terraform.
+The site can be deployed to any domain using AWS (S3 + CloudFront + Route53) and Terraform.
 
 ### Prerequisites
 
 - [Terraform](https://www.terraform.io/downloads) ≥ 1.0
 - [AWS CLI](https://aws.amazon.com/cli/) configured (credentials with permissions for S3, CloudFront, Route53, ACM)
-- The domain **programmingwitharagon.com** must have a **Route53 hosted zone** in your AWS account.  
+- Your domain must have a **Route53 hosted zone** in your AWS account.  
   If it’s currently at another DNS provider, create a hosted zone in Route53 and update your registrar’s nameservers to the NS records of that zone.
 
 ### One-time setup
 
 1. **Get your Route53 zone ID**  
-   In AWS Console → Route53 → Hosted zones, open **programmingwitharagon.com** and copy the **Hosted zone ID** (e.g. `Z0123456789ABCDEFGHIJ`).
+   In AWS Console → Route53 → Hosted zones, open your domain's hosted zone and copy the **Hosted zone ID** (e.g. `Z0123456789ABCDEFGHIJ`).
 
 2. **Configure Terraform**  
    From the project root:
@@ -33,7 +82,7 @@ The site is deployed to **family-tree.programmingwitharagon.com** using AWS (S3 
    cp terraform.tfvars.example terraform.tfvars
    ```
    Edit `terraform.tfvars` and set `route53_zone_id` to that value.  
-   Optionally set `aws_region`, `domain`, or `subdomain` (defaults: `us-east-1`, `programmingwitharagon.com`, `family-tree`).
+   Set `domain` and `subdomain` to your domain (e.g. `example.com` and `family-tree` for `family-tree.example.com`). Optionally set `aws_region`.
 
 3. **Create infrastructure**
    ```bash
@@ -89,7 +138,7 @@ The script reads `S3_BUCKET` and `CLOUDFRONT_DISTRIBUTION_ID` from the environme
 
 ---
 
-The site will be live at **https://family-tree.programmingwitharagon.com**.
+The site will be live at your configured URL (e.g. **https://family-tree.example.com**).
 
 ### Destroy
 

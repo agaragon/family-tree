@@ -409,3 +409,92 @@ html, body, #root {
     bottom: 80px; /* above instruction bar when wrapped */
   }
 }
+
+/* ===== Tour overlay ===== */
+
+.tour-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.tour-overlay .tour-dialog {
+  pointer-events: auto;
+}
+
+.tour-dialog {
+  background: rgba(58, 42, 26, 0.95);
+  color: #f5efe6;
+  padding: 20px 24px;
+  border-radius: 12px;
+  max-width: 380px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border: 1px solid #c4a882;
+}
+
+.tour-content h3 {
+  margin: 0 0 10px;
+  font-size: 16px;
+  color: #f5efe6;
+}
+
+.tour-content p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  opacity: 0.95;
+}
+
+.tour-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(196, 168, 130, 0.4);
+}
+
+.tour-footer-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tour-progress {
+  font-size: 12px;
+  opacity: 0.9;
+  flex-shrink: 0;
+}
+
+.tour-buttons {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.tour-buttons .export-pdf-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tour-stop-btn {
+  align-self: flex-end;
+  padding: 6px 14px;
+  border: 1px solid rgba(196, 168, 130, 0.6);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f5efe6;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tour-stop-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
