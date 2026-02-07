@@ -1,18 +1,16 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Handle, Position } from '@xyflow/react';
+import { DEFAULT_LABEL, NEW_MEMBER_LABEL } from '../ontology';
 
 /**
  * Custom React Flow node representing a family member.
- * - Displays an editable name field (click to edit, blur/Enter to save).
- * - Has connection handles on top and bottom for linking to other members.
- * - Includes a delete button (×) in the top-right corner.
+ * Data contract (from ontology): { label, onDelete(id), onRename(id, name), parentLabels?, generation? }
  */
 export default function FamilyMemberNode({ id, data }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(data.label);
   const inputRef = useRef(null);
 
-  // Auto-focus the input when entering edit mode
   useEffect(() => {
     if (editing && inputRef.current) {
       inputRef.current.focus();
@@ -22,7 +20,7 @@ export default function FamilyMemberNode({ id, data }) {
 
   const commitName = useCallback(() => {
     setEditing(false);
-    const trimmed = name.trim() || 'Sem nome';
+    const trimmed = name.trim() || DEFAULT_LABEL;
     setName(trimmed);
     data.onRename(id, trimmed);
   }, [id, name, data]);
@@ -31,7 +29,7 @@ export default function FamilyMemberNode({ id, data }) {
     (e) => {
       if (e.key === 'Enter') commitName();
       if (e.key === 'Escape') {
-        setName(data.label); // revert
+        setName(data.label);
         setEditing(false);
       }
     },
@@ -39,7 +37,8 @@ export default function FamilyMemberNode({ id, data }) {
   );
 
   const trimmed = name.trim();
-  const isDefaultName = !trimmed || trimmed === 'Novo membro' || trimmed === 'Sem nome';
+  const isDefaultName =
+    !trimmed || trimmed === NEW_MEMBER_LABEL || trimmed === DEFAULT_LABEL;
   const isCompact = !editing && !isDefaultName;
 
   return (
@@ -60,11 +59,11 @@ export default function FamilyMemberNode({ id, data }) {
         ×
       </button>
 
-      {/* Editable name */}
+      {/* Editable name — nodrag so touch/click doesn't start node drag */}
       {editing ? (
         <input
           ref={inputRef}
-          className="node-name-input"
+          className="node-name-input nodrag"
           value={name}
           onChange={(e) => setName(e.target.value)}
           onBlur={commitName}
@@ -72,8 +71,11 @@ export default function FamilyMemberNode({ id, data }) {
         />
       ) : (
         <div
-          className="node-name"
+          className="node-name nodrag"
           onDoubleClick={() => setEditing(true)}
+          onClick={() => {
+            if ('ontouchstart' in window) setEditing(true);
+          }}
           title="Clique duas vezes para editar o nome"
         >
           {name}
