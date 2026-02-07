@@ -22,7 +22,7 @@ export default function FamilyMemberNode({ id, data }) {
 
   const commitName = useCallback(() => {
     setEditing(false);
-    const trimmed = name.trim() || 'Unnamed';
+    const trimmed = name.trim() || 'Sem nome';
     setName(trimmed);
     data.onRename(id, trimmed);
   }, [id, name, data]);
@@ -47,7 +47,7 @@ export default function FamilyMemberNode({ id, data }) {
       {/* Delete button */}
       <button
         className="node-delete"
-        title="Delete member"
+        title="Excluir membro"
         onClick={(e) => {
           e.stopPropagation();
           data.onDelete(id);
@@ -70,15 +70,15 @@ export default function FamilyMemberNode({ id, data }) {
         <div
           className="node-name"
           onDoubleClick={() => setEditing(true)}
-          title="Double-click to edit name"
+          title="Clique duas vezes para editar o nome"
         >
           {name}
         </div>
       )}
 
       {data.parentLabels?.length >= 2 && (
-        <div className="node-parents" title="Child of this couple">
-          Child of {data.parentLabels.join(' & ')}
+        <div className="node-parents" title="Filho deste casal">
+          Filho de {data.parentLabels.join(' e ')}
         </div>
       )}
 

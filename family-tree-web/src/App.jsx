@@ -18,26 +18,36 @@ import ParentForkEdge from './components/ParentForkEdge';
 import './App.css';
 
 const STORAGE_KEY = 'family-tree-data';
+const URL_PARAM = 'tree';
 
 let nodeId = 0;
 const getId = () => `member-${nodeId++}`;
 
 const defaultViewport = { x: 0, y: 0, zoom: 1 };
 
+function parsePayload(data) {
+  const nodes = data.nodes || [];
+  const edges = data.edges || [];
+  const viewport =
+    data.viewport && typeof data.viewport.zoom === 'number'
+      ? { x: Number(data.viewport.x) || 0, y: Number(data.viewport.y) || 0, zoom: data.viewport.zoom }
+      : defaultViewport;
+  const maxId = Math.max(0, ...nodes.map((n) => parseInt(String(n.id).replace('member-', ''), 10) || 0));
+  nodeId = maxId + 1;
+  return { nodes, edges, viewport };
+}
+
 function getInitialData() {
   try {
+    const params = new URLSearchParams(window.location.search);
+    const encoded = params.get(URL_PARAM);
+    if (encoded) {
+      const data = JSON.parse(decodeURIComponent(encoded));
+      return parsePayload(data);
+    }
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return { nodes: [], edges: [], viewport: defaultViewport };
-    const data = JSON.parse(raw);
-    const nodes = data.nodes || [];
-    const edges = data.edges || [];
-    const viewport =
-      data.viewport && typeof data.viewport.zoom === 'number'
-        ? { x: Number(data.viewport.x) || 0, y: Number(data.viewport.y) || 0, zoom: data.viewport.zoom }
-        : defaultViewport;
-    const maxId = Math.max(0, ...nodes.map((n) => parseInt(String(n.id).replace('member-', ''), 10) || 0));
-    nodeId = maxId + 1;
-    return { nodes, edges, viewport };
+    return parsePayload(JSON.parse(raw));
   } catch {
     return { nodes: [], edges: [], viewport: defaultViewport };
   }
@@ -91,7 +101,7 @@ function FamilyTreeCanvas() {
         id: n.id,
         type: n.type,
         position: n.position,
-        data: { label: n.data?.label ?? 'Unnamed' },
+        data: { label: n.data?.label ?? 'Sem nome' },
       })),
       edges,
       viewport: { x: viewport.x, y: viewport.y, zoom: viewport.zoom },
@@ -133,23 +143,38 @@ function FamilyTreeCanvas() {
     [],
   );
 
-  // Enrich edges with junction for fork pattern when a child has two parents
+  // Enrich edges with junction for fork pattern; siblings share the same junction Y
   const edgesForFlow = useMemo(() => {
     const familyNodes = nodes.filter((n) => n.type !== 'generationLines');
     const NODE_CENTER_X = 60;
     const JUNCTION_OFFSET_Y = 40;
-    return edges.map((edge) => {
-      const toChild = edges.filter((e) => e.target === edge.target);
-      if (toChild.length !== 2) return edge;
-      const [p1, p2] = toChild.map((e) => e.source);
+    // Group children by parent pair (siblings = same two parents)
+    const parentKeyToChildren = {};
+    for (const node of familyNodes) {
+      const parents = edges.filter((e) => e.target === node.id).map((e) => e.source).sort();
+      if (parents.length !== 2) continue;
+      const key = `${parents[0]},${parents[1]}`;
+      if (!parentKeyToChildren[key]) parentKeyToChildren[key] = [];
+      parentKeyToChildren[key].push(node.id);
+    }
+    // One junction (same Y) per sibling group
+    const siblingJunction = {};
+    for (const [key, childIds] of Object.entries(parentKeyToChildren)) {
+      const [p1, p2] = key.split(',');
       const n1 = familyNodes.find((n) => n.id === p1);
       const n2 = familyNodes.find((n) => n.id === p2);
-      const child = familyNodes.find((n) => n.id === edge.target);
-      if (!n1 || !n2 || !child) return edge;
-      const junction = {
-        x: (n1.position.x + n2.position.x) / 2 + NODE_CENTER_X,
-        y: child.position.y - JUNCTION_OFFSET_Y,
-      };
+      const childNodes = childIds.map((id) => familyNodes.find((n) => n.id === id)).filter(Boolean);
+      if (!n1 || !n2 || childNodes.length === 0) continue;
+      const junctionY = Math.min(...childNodes.map((n) => n.position.y)) - JUNCTION_OFFSET_Y;
+      const junctionX = (n1.position.x + n2.position.x) / 2 + NODE_CENTER_X;
+      siblingJunction[key] = { x: junctionX, y: junctionY };
+    }
+    return edges.map((edge) => {
+      const parents = edges.filter((e) => e.target === edge.target).map((e) => e.source).sort();
+      if (parents.length !== 2) return edge;
+      const key = `${parents[0]},${parents[1]}`;
+      const junction = siblingJunction[key];
+      if (!junction) return edge;
       return {
         ...edge,
         type: 'fork',
@@ -171,7 +196,7 @@ function FamilyTreeCanvas() {
         type: 'familyMember',
         position,
         data: {
-          label: 'New Member',
+          label: 'Novo membro',
           onDelete: deleteNode,
           onRename: renameNode,
         },
@@ -247,7 +272,7 @@ function FamilyTreeCanvas() {
   }, [nodes, edges, deleteNode, renameNode]);
 
   const clearAll = useCallback(() => {
-    if (!window.confirm('Clear the entire family tree? This cannot be undone.')) return;
+    if (!window.confirm('Limpar toda a árvore genealógica? Esta ação não pode ser desfeita.')) return;
     nodeId = 0;
     setNodes([]);
     setEdges([]);
@@ -255,6 +280,7 @@ function FamilyTreeCanvas() {
     localStorage.removeItem(STORAGE_KEY);
   }, [setNodes, setEdges]);
 
+  const [pdfPaperSize, setPdfPaperSize] = useState('a1');
   const exportPdf = useCallback(() => {
     if (!reactFlowWrapper.current) return;
     html2pdf(reactFlowWrapper.current, {
@@ -262,9 +288,24 @@ function FamilyTreeCanvas() {
       filename: 'family-tree.pdf',
       image: { type: 'jpeg', quality: 0.95 },
       html2canvas: { scale: 2 },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+      jsPDF: { unit: 'mm', format: pdfPaperSize, orientation: 'landscape' },
     });
-  }, []);
+  }, [pdfPaperSize]);
+
+  const exportLink = useCallback(() => {
+    const payload = {
+      nodes: nodes.map((n) => ({
+        id: n.id,
+        type: n.type,
+        position: n.position,
+        data: { label: n.data?.label ?? 'Sem nome' },
+      })),
+      edges,
+      viewport: { x: viewport.x, y: viewport.y, zoom: viewport.zoom },
+    };
+    const url = `${window.location.origin}${window.location.pathname}?${URL_PARAM}=${encodeURIComponent(JSON.stringify(payload))}`;
+    navigator.clipboard.writeText(url).then(() => alert('Link de compartilhamento copiado para a área de transferência'));
+  }, [nodes, edges, viewport]);
 
   return (
     <div className="tree-frame" ref={reactFlowWrapper} onKeyDown={onKeyDown} tabIndex={0}>
@@ -290,15 +331,30 @@ function FamilyTreeCanvas() {
 
         {/* Instruction banner */}
         <div className="instructions">
-        Same row = same generation (siblings, cousins) &middot; Click to add
-        member &middot; Double-click name to edit &middot; Connect handles
-        (two parents → one child = couple) &middot; Delete to remove edge &middot;{' '}
+        Mesma linha = mesma geração (irmãos, primos) &middot; Clique para adicionar
+        membro &middot; Clique duas vezes no nome para editar &middot; Conecte as alças
+        (dois pais → um filho = casal) &middot; Delete para remover conexão &middot;{' '}
+        <button type="button" className="export-pdf-btn" onClick={exportLink}>
+          Exportar link
+        </button>
+        &middot;{' '}
+        <select
+          value={pdfPaperSize}
+          onChange={(e) => setPdfPaperSize(e.target.value)}
+          className="export-pdf-btn"
+          style={{ marginRight: 2 }}
+          aria-label="Tamanho do papel para PDF"
+        >
+          <option value="a4">A4</option>
+          <option value="a1">A1</option>
+          <option value="a0">A0</option>
+        </select>
         <button type="button" className="export-pdf-btn" onClick={exportPdf}>
-          Export PDF
+          Exportar PDF
         </button>
         &middot;{' '}
         <button type="button" className="clear-tree-btn" onClick={clearAll}>
-          Clear tree
+          Limpar árvore
         </button>
         </div>
       </div>
