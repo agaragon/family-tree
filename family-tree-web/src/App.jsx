@@ -31,7 +31,6 @@ import {
   saveBackgroundImage,
   clearUrlTreeParam,
   clearStoredTree,
-  buildSharePayload,
 } from './services/persistenceService';
 import {
   getGenerations,
@@ -281,9 +280,9 @@ function FamilyTreeCanvas() {
   const familyNodes = nodes.filter((n) => n.type !== NODE_TYPES.GENERATION_LINES);
   const familyNodePositionsRef = useRef(new Map());
   useEffect(() => {
-    familyNodePositionsRef.current = new Map(
-      familyNodes.map((n) => [n.id, n.position]),
-    );
+    const map = familyNodePositionsRef.current;
+    map.clear();
+    familyNodes.forEach((n) => map.set(n.id, n.position));
   }, [familyNodes]);
   const generations = useMemo(
     () => getGenerations(familyNodes, edges),
@@ -325,7 +324,7 @@ function FamilyTreeCanvas() {
       selectable: false,
     };
     return [linesNode, ...withCallbacks];
-  }, [familyNodes, edges, generations, settings.nodeSize, settings.nodeColor, deleteNode, renameNode, getParentLabels, pendingConnectionSource]);
+  }, [familyNodes, edges, generations, maxGen, settings.nodeSize, settings.nodeColor, deleteNode, renameNode, getParentLabels, pendingConnectionSource]);
 
   const alignNodes = useCallback(() => {
     const positions = computeAlignPositions(familyNodes, edges, generations);
