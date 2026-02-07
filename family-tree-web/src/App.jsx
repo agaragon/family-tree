@@ -23,7 +23,9 @@ import {
 import { nextMemberId, resetIdGenerator } from './ontology/idGenerator';
 import {
   loadInitialData,
+  loadBackgroundImage,
   savePayload,
+  saveBackgroundImage,
   clearUrlTreeParam,
   clearStoredTree,
   buildSharePayload,
@@ -41,13 +43,21 @@ import './App.css';
 
 const initialData = loadInitialData();
 
+const isMobileView = () =>
+  typeof window !== 'undefined' && window.innerWidth <= 768;
+
 function FamilyTreeCanvas() {
   const reactFlowWrapper = useRef(null);
   const dragJustEndedRef = useRef(false);
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, fitView } = useReactFlow();
+  const openFromSharedLinkOnMobile =
+    initialData.fromSharedLink && isMobileView();
   const [nodes, setNodes, onNodesChange] = useNodesState(initialData.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialData.edges);
-  const [viewport, setViewport] = useState(initialData.viewport);
+  const [viewport, setViewport] = useState(
+    openFromSharedLinkOnMobile ? defaultViewport : initialData.viewport,
+  );
+  const [bgImage, setBgImage] = useState(loadBackgroundImage);
 
   useEffect(() => {
     savePayload(nodes, edges, viewport);
@@ -56,6 +66,29 @@ function FamilyTreeCanvas() {
   useEffect(() => {
     clearUrlTreeParam();
   }, []);
+
+  const fitViewOnMobileDoneRef = useRef(false);
+  useEffect(() => {
+    if (
+      !openFromSharedLinkOnMobile ||
+      fitViewOnMobileDoneRef.current ||
+      nodes.length === 0
+    )
+      return;
+    fitViewOnMobileDoneRef.current = true;
+    const familyNodeIds = nodes
+      .filter((n) => n.type !== NODE_TYPES.GENERATION_LINES)
+      .map((n) => ({ id: n.id }));
+    if (familyNodeIds.length === 0) return;
+    const id = setTimeout(() => {
+      fitView({
+        padding: 0.2,
+        duration: 0,
+        nodes: familyNodeIds,
+      });
+    }, 150);
+    return () => clearTimeout(id);
+  }, [openFromSharedLinkOnMobile, fitView, nodes]);
 
   const deleteNode = useCallback(
     (id) => {
@@ -218,6 +251,23 @@ function FamilyTreeCanvas() {
     exportToJson(nodes, edges, viewport);
   }, [nodes, edges, viewport]);
 
+  const fileInputRef = useRef(null);
+  const onImportBg = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+  const onBgFileChange = useCallback((e) => {
+    const file = e.target.files?.[0];
+    if (!file?.type.startsWith('image/')) return;
+    const r = new FileReader();
+    r.onload = () => {
+      const dataUrl = r.result;
+      saveBackgroundImage(dataUrl);
+      setBgImage(dataUrl);
+    };
+    r.readAsDataURL(file);
+    e.target.value = '';
+  }, []);
+
   return (
     <div
       className="tree-frame"
@@ -225,7 +275,22 @@ function FamilyTreeCanvas() {
       onKeyDown={onKeyDown}
       tabIndex={0}
     >
-      <div className="reactflow-wrapper">
+      <div
+        className="reactflow-wrapper"
+        style={
+          bgImage
+            ? { background: `url(${bgImage}) center center no-repeat`, backgroundSize: 'contain' }
+            : undefined
+        }
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={onBgFileChange}
+          className="bg-import-input"
+          aria-label="Importar imagem de fundo"
+        />
         <ReactFlow
           nodes={nodesForFlow}
           edges={edgesForFlow}
@@ -236,7 +301,9 @@ function FamilyTreeCanvas() {
           onConnect={onConnect}
           onPaneClick={onPaneClick}
           onViewportChange={({ x, y, zoom }) => setViewport({ x, y, zoom })}
-          defaultViewport={initialData.viewport}
+          defaultViewport={
+            openFromSharedLinkOnMobile ? defaultViewport : initialData.viewport
+          }
           nodeTypes={nodeTypes}
           fitView={false}
           deleteKeyCode={null}
@@ -244,25 +311,30 @@ function FamilyTreeCanvas() {
         >
           <Background variant="dots" gap={24} size={1} color="#c4a882" />
         </ReactFlow>
+      </div>
 
-        <div className="instructions">
+      <aside className="instructions">
+        <div className="instructions-tips">
           Mesma linha = mesma geração (irmãos, primos) &middot; Clique para
           adicionar membro &middot; Clique duas vezes no nome para editar
           &middot; Conecte as alças (dois pais → um filho = casal) &middot;
-          Delete para remover conexão &middot;{' '}
+          Delete para remover conexão
+        </div>
+        <div className="instructions-actions">
+          <button type="button" className="export-pdf-btn" onClick={onImportBg}>
+            Importar fundo
+          </button>
+          <span className="bg-notice">(não compartilhado no link)</span>
           <button type="button" className="export-pdf-btn" onClick={exportLink}>
             Exportar link
           </button>
-          &middot;{' '}
           <button type="button" className="export-pdf-btn" onClick={exportJson}>
             Exportar JSON
           </button>
-          &middot;{' '}
           <select
             value={pdfPaperSize}
             onChange={(e) => setPdfPaperSize(e.target.value)}
             className="export-pdf-btn"
-            style={{ marginRight: 2 }}
             aria-label="Tamanho do papel para PDF"
           >
             <option value="a4">A4</option>
@@ -272,12 +344,11 @@ function FamilyTreeCanvas() {
           <button type="button" className="export-pdf-btn" onClick={exportPdf}>
             Exportar PDF
           </button>
-          &middot;{' '}
           <button type="button" className="clear-tree-btn" onClick={clearAll}>
             Limpar árvore
           </button>
         </div>
-      </div>
+      </aside>
     </div>
   );
 }

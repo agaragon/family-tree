@@ -20,6 +20,19 @@
   overflow: hidden;
 }
 
+@media (min-width: 769px) {
+  .tree-frame {
+    display: flex;
+    flex-direction: row;
+    width: var(--frame-w);
+    min-width: var(--frame-w);
+  }
+  .tree-frame .reactflow-wrapper {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
 .reactflow-wrapper {
   width: 100%;
   height: 100%;
@@ -28,8 +41,19 @@
   background-size: contain;
 }
 
+.bg-import-input {
+  display: none;
+}
+
+.bg-notice {
+  font-size: 11px;
+  opacity: 0.85;
+}
+
 /* Hide UI elements when capturing for PDF */
-.tree-frame.pdf-exporting .instructions,
+.tree-frame.pdf-exporting .instructions {
+  display: none !important;
+}
 .tree-frame.pdf-exporting .react-flow__controls,
 .tree-frame.pdf-exporting .react-flow__background,
 .tree-frame.pdf-exporting .react-flow__handle {
@@ -151,7 +175,7 @@
   border: 2px solid #fff;
 }
 
-/* ===== Instruction banner ===== */
+/* ===== Instruction sidebar (desktop) / banner (mobile) ===== */
 
 .instructions {
   position: absolute;
@@ -169,6 +193,41 @@
   backdrop-filter: blur(4px);
 }
 
+@media (min-width: 769px) {
+  .instructions {
+    position: static;
+    order: -1;
+    transform: none;
+    width: 200px;
+    flex-shrink: 0;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 0 8px 8px 0;
+    white-space: normal;
+  }
+  .instructions-tips {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .instructions-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .instructions-actions .export-pdf-btn,
+  .instructions-actions .clear-tree-btn,
+  .instructions-actions select.export-pdf-btn {
+    margin-left: 0;
+    width: 100%;
+  }
+  .instructions-actions .bg-notice {
+    font-size: 10px;
+  }
+}
+
 .instructions .export-pdf-btn,
 .instructions .clear-tree-btn {
   pointer-events: auto;
@@ -180,6 +239,13 @@
   color: #f5efe6;
   font-size: 12px;
   cursor: pointer;
+}
+
+@media (min-width: 769px) {
+  .instructions .export-pdf-btn,
+  .instructions .clear-tree-btn {
+    margin-left: 0;
+  }
 }
 
 .instructions .export-pdf-btn:hover,
@@ -243,6 +309,11 @@ html, body, #root {
     align-items: center;
     justify-content: center;
     max-width: calc(100vw - 32px);
+  }
+
+  .instructions-tips,
+  .instructions-actions {
+    display: contents;
   }
 
   .instructions .export-pdf-btn,

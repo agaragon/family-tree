@@ -4,6 +4,7 @@
  */
 import {
   STORAGE_KEY,
+  BG_STORAGE_KEY,
   URL_PARAM,
   defaultViewport,
   DEFAULT_LABEL,
@@ -19,7 +20,7 @@ export function clearUrlTreeParam() {
 }
 import { syncIdFromNodes } from '../ontology/idGenerator';
 
-function parsePayload(data) {
+function parsePayload(data, fromSharedLink = false) {
   const nodes = data.nodes || [];
   const edges = data.edges || [];
   const viewport =
@@ -31,7 +32,7 @@ function parsePayload(data) {
         }
       : defaultViewport;
   syncIdFromNodes(nodes);
-  return { nodes, edges, viewport };
+  return { nodes, edges, viewport, fromSharedLink };
 }
 
 export function loadInitialData() {
@@ -39,13 +40,14 @@ export function loadInitialData() {
     const params = new URLSearchParams(window.location.search);
     const encoded = params.get(URL_PARAM);
     if (encoded) {
-      return parsePayload(JSON.parse(decodeURIComponent(encoded)));
+      return parsePayload(JSON.parse(decodeURIComponent(encoded)), true);
     }
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { nodes: [], edges: [], viewport: defaultViewport };
+    if (!raw)
+      return { nodes: [], edges: [], viewport: defaultViewport, fromSharedLink: false };
     return parsePayload(JSON.parse(raw));
   } catch {
-    return { nodes: [], edges: [], viewport: defaultViewport };
+    return { nodes: [], edges: [], viewport: defaultViewport, fromSharedLink: false };
   }
 }
 
@@ -65,6 +67,15 @@ export function savePayload(nodes, edges, viewport) {
 
 export function clearStoredTree() {
   localStorage.removeItem(STORAGE_KEY);
+}
+
+export function loadBackgroundImage() {
+  return localStorage.getItem(BG_STORAGE_KEY);
+}
+
+export function saveBackgroundImage(dataUrl) {
+  if (dataUrl) localStorage.setItem(BG_STORAGE_KEY, dataUrl);
+  else localStorage.removeItem(BG_STORAGE_KEY);
 }
 
 export function buildSharePayload(nodes, edges, viewport) {

@@ -5,6 +5,7 @@
 
 // ——— Constants ———
 export const STORAGE_KEY = 'family-tree-data';
+export const BG_STORAGE_KEY = 'family-tree-bg';
 export const URL_PARAM = 'tree';
 export const ROW_HEIGHT = 80;
 export const DEFAULT_LABEL = 'Sem nome';
