@@ -1,0 +1,20 @@
+---
+description: Family Tree project architecture and conventions
+alwaysApply: true
+---
+
+# Family Tree — Project Context
+
+React (Vite) app that renders an editable genealogical graph using React Flow. Architecture follows **SOLID** with a well-defined domain layer.
+
+## Key Concepts
+- **Domain** (`family-tree-web/src/domain/`): Constants, types, idGenerator. Single source of truth.
+- **Services**: `persistenceService`, `layoutService`, `exportService` — stateless, depend on domain.
+- **FlowNode/FlowEdge**: React Flow node/edge shapes; types in `domain.js` (`NODE_TYPES`, `EDGE_TYPES`).
+- **Payload**: `{ nodes, edges, viewport }` — persisted/shared shape. Keep node data minimal (id, type, position, data.label).
+
+## Conventions
+- Domain concepts in `domain/`; ID logic in `idGenerator.js`.
+- Services expose small, focused functions. App orchestrates; components are presentational.
+- New node types: add to `NODE_TYPES`, implement component, register in App — no service changes if excluded from family-node filtering.
+- See `docs/Architecture.md` for full file map and SOLID mapping.
