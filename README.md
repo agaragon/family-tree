@@ -45,7 +45,29 @@ The site is deployed to **family-tree.programmingwitharagon.com** using AWS (S3 
 
 ### Deploy (or update) the site
 
-After the first `terraform apply`, any time you want to publish a new version:
+**Option A: GitHub Actions (recommended)**
+
+A workflow in `.github/workflows/deploy.yml` builds and deploys on every push to `master`.
+
+1. **Configure GitHub secrets** (Settings → Secrets and variables → Actions):
+   - `AWS_ACCESS_KEY_ID` – AWS access key with S3 and CloudFront permissions
+   - `AWS_SECRET_ACCESS_KEY` – corresponding secret key
+   - `S3_BUCKET` – from `terraform output s3_bucket`
+   - `CLOUDFRONT_DISTRIBUTION_ID` – from `terraform output cloudfront_distribution_id`
+
+2. Push to `master` – the pipeline runs lint, build, S3 sync, and CloudFront invalidation.
+
+**Option B: Run pipeline locally**
+
+From the project root, with AWS CLI configured (env or `~/.aws/credentials`):
+
+```bash
+./scripts/deploy.sh
+```
+
+The script reads `S3_BUCKET` and `CLOUDFRONT_DISTRIBUTION_ID` from the environment, or fetches them from `terraform output` if Terraform is available. Same steps as GitHub Actions: lint → build → S3 sync → CloudFront invalidation.
+
+**Option C: Manual deploy (step by step)**
 
 1. **Build the app**
    ```bash
@@ -64,6 +86,8 @@ After the first `terraform apply`, any time you want to publish a new version:
    aws cloudfront create-invalidation --distribution-id DISTRIBUTION_ID --paths "/*"
    ```
    Replace `DISTRIBUTION_ID` with `terraform output cloudfront_distribution_id`.
+
+---
 
 The site will be live at **https://family-tree.programmingwitharagon.com**.
 

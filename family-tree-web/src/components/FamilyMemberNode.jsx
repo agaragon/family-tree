@@ -38,8 +38,12 @@ export default function FamilyMemberNode({ id, data }) {
     [commitName, data.label],
   );
 
+  const trimmed = name.trim();
+  const isDefaultName = !trimmed || trimmed === 'Novo membro' || trimmed === 'Sem nome';
+  const isCompact = !editing && !isDefaultName;
+
   return (
-    <div className="family-node">
+    <div className={`family-node${isCompact ? ' family-node--compact' : ''}`}>
       {/* Top handle — connect as child */}
       <Handle id="target" type="target" position={Position.Top} />
 

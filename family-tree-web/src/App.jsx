@@ -11,7 +11,8 @@ import {
   ReactFlowProvider,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import html2pdf from 'html2pdf.js';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import FamilyMemberNode from './components/FamilyMemberNode';
 import GenerationLinesNode from './components/GenerationLinesNode';
 import ParentForkEdge from './components/ParentForkEdge';
@@ -281,15 +282,27 @@ function FamilyTreeCanvas() {
   }, [setNodes, setEdges]);
 
   const [pdfPaperSize, setPdfPaperSize] = useState('a1');
-  const exportPdf = useCallback(() => {
+  const exportPdf = useCallback(async () => {
     if (!reactFlowWrapper.current) return;
-    html2pdf(reactFlowWrapper.current, {
-      margin: 10,
-      filename: 'family-tree.pdf',
-      image: { type: 'jpeg', quality: 0.95 },
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: 'mm', format: pdfPaperSize, orientation: 'landscape' },
-    });
+    const el = reactFlowWrapper.current;
+    el.classList.add('pdf-exporting');
+    await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
+    const margin = 10;
+    const pageInner = {
+      a4: { w: 297 - margin * 2, h: 210 - margin * 2 },
+      a1: { w: 841 - margin * 2, h: 594 - margin * 2 },
+      a0: { w: 1189 - margin * 2, h: 841 - margin * 2 },
+    }[pdfPaperSize];
+    const canvas = await html2canvas(el, { scale: 2 });
+    el.classList.remove('pdf-exporting');
+    const imgW = canvas.width;
+    const imgH = canvas.height;
+    const scale = Math.min(pageInner.w / imgW, pageInner.h / imgH);
+    const fitW = imgW * scale;
+    const fitH = imgH * scale;
+    const pdf = new jsPDF({ unit: 'mm', format: pdfPaperSize, orientation: 'landscape' });
+    pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', margin, margin, fitW, fitH);
+    pdf.save('family-tree.pdf');
   }, [pdfPaperSize]);
 
   const exportLink = useCallback(() => {
