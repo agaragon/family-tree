@@ -185,19 +185,22 @@ function FamilyTreeCanvas() {
         x: flowPos.x - NEW_MEMBER_NODE_HALF_WIDTH,
         y: flowPos.y - NEW_MEMBER_NODE_HALF_HEIGHT,
       };
-      setNodes((nds) => [
-        ...nds,
-        {
-          id: nextMemberId(),
-          type: NODE_TYPES.FAMILY_MEMBER,
-          position,
-          data: {
-            label: NEW_MEMBER_LABEL,
-            onDelete: deleteNode,
-            onRename: renameNode,
+      setNodes((nds) => {
+        if (nds.some((n) => n.selected)) return nds;
+        return [
+          ...nds,
+          {
+            id: nextMemberId(),
+            type: NODE_TYPES.FAMILY_MEMBER,
+            position,
+            data: {
+              label: NEW_MEMBER_LABEL,
+              onDelete: deleteNode,
+              onRename: renameNode,
+            },
           },
-        },
-      ]);
+        ];
+      });
     },
     [screenToFlowPosition, setNodes, deleteNode, renameNode],
   );
