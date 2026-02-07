@@ -1,6 +1,6 @@
 /**
  * Persistence service — single responsibility: load/save tree payload.
- * Depends on ontology constants (STORAGE_KEY, URL_PARAM, defaultViewport).
+ * Depends on domain constants (STORAGE_KEY, URL_PARAM, defaultViewport).
  */
 import {
   STORAGE_KEY,
@@ -8,7 +8,8 @@ import {
   URL_PARAM,
   defaultViewport,
   DEFAULT_LABEL,
-} from '../ontology';
+} from '../domain';
+import { syncIdFromNodes } from '../domain/idGenerator';
 
 export function clearUrlTreeParam() {
   const params = new URLSearchParams(window.location.search);
@@ -18,7 +19,6 @@ export function clearUrlTreeParam() {
     window.history.replaceState(null, '', clean);
   }
 }
-import { syncIdFromNodes } from '../ontology/idGenerator';
 
 function parsePayload(data, fromSharedLink = false) {
   const nodes = data.nodes || [];

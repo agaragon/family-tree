@@ -1,10 +1,10 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Handle, Position } from '@xyflow/react';
-import { DEFAULT_LABEL, NEW_MEMBER_LABEL } from '../ontology';
+import { DEFAULT_LABEL, NEW_MEMBER_LABEL } from '../domain';
 
 /**
  * Custom React Flow node representing a family member.
- * Data contract (from ontology): { label, onDelete(id), onRename(id, name), parentLabels?, generation? }
+ * Data contract: { label, onDelete(id), onRename(id, name), parentLabels?, generation? }
  */
 export default function FamilyMemberNode({ id, data }) {
   const [editing, setEditing] = useState(false);

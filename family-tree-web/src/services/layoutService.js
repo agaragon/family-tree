@@ -2,7 +2,7 @@
  * Layout service — single responsibility: compute generations and edge junctions.
  * Pure functions over nodes/edges; no side effects.
  */
-import { ROW_HEIGHT } from '../ontology';
+import { ROW_HEIGHT } from '../domain';
 
 export function getGenerations(nodes, edges) {
   const gen = {};

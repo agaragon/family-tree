@@ -1,10 +1,10 @@
 /**
  * Export service — single responsibility: PDF and share-link export.
- * Depends on ontology (URL_PARAM, defaultViewport) and buildSharePayload from persistence.
+ * Depends on domain (URL_PARAM) and buildSharePayload from persistence.
  */
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
-import { URL_PARAM } from '../ontology';
+import { URL_PARAM } from '../domain';
 import { buildSharePayload } from './persistenceService';
 
 const PAGE_INNER_MM = {

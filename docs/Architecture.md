@@ -2,13 +2,13 @@
 
 ## Overview
 
-The Family Tree web app is a React (Vite) single-page application that renders an editable genealogical graph using React Flow. The architecture follows **SOLID** principles and uses a **well-defined ontology** so domain concepts and responsibilities stay clear and stable.
+The Family Tree web app is a React (Vite) single-page application that renders an editable genealogical graph using React Flow. The architecture follows **SOLID** principles and uses a **well-defined domain** layer so domain concepts and responsibilities stay clear and stable.
 
 ---
 
-## Ontology
+## Domain
 
-The ontology is the single source of truth for domain concepts. It lives under `src/ontology/`.
+The domain layer is the single source of truth for domain concepts and constants. It lives under `src/domain/`.
 
 ### Domain concepts
 
@@ -21,7 +21,7 @@ The ontology is the single source of truth for domain concepts. It lives under `
 | **Generation** | Non-negative integer per node: 0 = roots, 1 = their children, etc. Same generation ⇒ same horizontal row (siblings/cousins). |
 | **Junction** | Point `{ x, y }` where two parent edges meet above a child (fork pattern). |
 
-### Constants (ontology)
+### Constants
 
 - **STORAGE_KEY**, **URL_PARAM** — persistence keys.
 - **ROW_HEIGHT** — vertical spacing per generation row.
@@ -35,7 +35,7 @@ The ontology is the single source of truth for domain concepts. It lives under `
 - **resetIdGenerator(n)** — reset counter (e.g. on “clear tree”).
 - **syncIdFromNodes(nodes)** — set counter from existing nodes (e.g. after load).
 
-All ID logic is centralized in `ontology/idGenerator.js` (Single Responsibility).
+All ID logic is centralized in `domain/idGenerator.js` (Single Responsibility).
 
 ---
 
@@ -44,10 +44,10 @@ All ID logic is centralized in `ontology/idGenerator.js` (Single Responsibility)
 | Principle | Application |
 |-----------|-------------|
 | **S — Single Responsibility** | **Persistence**: load/save payload only (`persistenceService`). **Layout**: generations + edge junctions only (`layoutService`). **Export**: PDF and share link only (`exportService`). **ID**: id generation only (`idGenerator`). **UI**: `App.jsx` orchestrates; nodes/edges are presentational. |
-| **O — Open/Closed** | New node/edge types can be added by registering in `nodeTypes`/`edgeTypes` and extending ontology `NODE_TYPES`/`EDGE_TYPES` without changing existing services. Layout and persistence work on minimal node shape. |
+| **O — Open/Closed** | New node/edge types can be added by registering in `nodeTypes`/`edgeTypes` and extending domain `NODE_TYPES`/`EDGE_TYPES` without changing existing services. Layout and persistence work on minimal node shape. |
 | **L — Liskov Substitution** | Any custom node/edge that satisfies React Flow’s `Node`/`Edge` contract can replace `FamilyMemberNode` / `ParentForkEdge` in the registry. |
 | **I — Interface Segregation** | Node data contract for family members is narrow: `{ label, onDelete(id), onRename(id, name), parentLabels?, generation? }`. Services expose small, focused functions (e.g. `loadInitialData`, `savePayload`, `getGenerations`, `enrichEdgesWithJunctions`). |
-| **D — Dependency Inversion** | High-level code (App) depends on abstractions: ontology constants/types and service functions. Services depend on ontology, not on UI. Export depends on `buildSharePayload` from persistence rather than duplicating payload shape. |
+| **D — Dependency Inversion** | High-level code (App) depends on abstractions: domain constants/types and service functions. Services depend on domain, not on UI. Export depends on `buildSharePayload` from persistence rather than duplicating payload shape. |
 
 ---
 
@@ -62,8 +62,8 @@ All ID logic is centralized in `ontology/idGenerator.js` (Single Responsibility)
                                 │ uses
                                 ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│  Ontology                                                        │
-│  domain.js (constants, types), idGenerator.js                   │
+│  Domain                                                          │
+│  domain.js (constants, types), idGenerator.js                    │
 └───────────────────────────────┬─────────────────────────────────┘
                                 ▲
                                 │ uses
@@ -84,14 +84,14 @@ All ID logic is centralized in `ontology/idGenerator.js` (Single Responsibility)
 
 | Path | Role |
 |------|------|
-| `src/ontology/domain.js` | Constants, default viewport, payload shape, NODE_TYPES, EDGE_TYPES. |
-| `src/ontology/idGenerator.js` | nextMemberId, resetIdGenerator, syncIdFromNodes. |
-| `src/ontology/index.js` | Re-exports ontology. |
+| `src/domain/domain.js` | Constants, default viewport, payload shape, NODE_TYPES, EDGE_TYPES. |
+| `src/domain/idGenerator.js` | nextMemberId, resetIdGenerator, syncIdFromNodes. |
+| `src/domain/index.js` | Re-exports domain. |
 | `src/services/persistenceService.js` | loadInitialData, savePayload, clearUrlTreeParam, clearStoredTree, buildSharePayload. |
 | `src/services/layoutService.js` | getGenerations, enrichEdgesWithJunctions, ROW_HEIGHT. |
 | `src/services/exportService.js` | exportToPdf, copyShareLinkToClipboard. |
 | `src/App.jsx` | ReactFlowProvider + FamilyTreeCanvas: state, handlers, node/edge wiring, toolbar. |
-| `src/components/FamilyMemberNode.jsx` | Editable member node; data contract from ontology. |
+| `src/components/FamilyMemberNode.jsx` | Editable member node; data contract from domain. |
 | `src/components/GenerationLinesNode.jsx` | Generation row lines. |
 | `src/components/ParentForkEdge.jsx` | Fork edge with junction. |
 

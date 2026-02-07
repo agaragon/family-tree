@@ -1,5 +1,5 @@
 /**
- * Family Tree domain ontology — canonical types and constants.
+ * Family Tree domain — canonical types and constants.
  * Single source of truth for domain concepts used across the app.
  */
 

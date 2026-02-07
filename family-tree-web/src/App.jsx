@@ -19,8 +19,8 @@ import {
   ROW_HEIGHT,
   NEW_MEMBER_LABEL,
   DEFAULT_LABEL,
-} from './ontology';
-import { nextMemberId, resetIdGenerator } from './ontology/idGenerator';
+} from './domain';
+import { nextMemberId, resetIdGenerator } from './domain/idGenerator';
 import {
   loadInitialData,
   loadBackgroundImage,
