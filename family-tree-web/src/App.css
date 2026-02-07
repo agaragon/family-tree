@@ -12,9 +12,15 @@
   opacity: 0.3;
 }
 
+/* Generation lines (behind nodes) */
+.generation-lines-node {
+  z-index: 0;
+}
+
 /* ===== Family member node card ===== */
 
 .family-node {
+  z-index: 1;
   background: rgba(255, 255, 255, 0.92);
   border: 2px solid #6b4c3b;
   border-radius: 10px;
@@ -45,6 +51,22 @@
 
 .node-name:hover {
   background: rgba(107, 76, 59, 0.08);
+}
+
+/* Shown when this node is the child of a couple (two parents) */
+.node-parents {
+  font-size: 11px;
+  color: #6b4c3b;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+/* Generation label — same row = same generation (siblings, cousins) */
+.node-generation {
+  font-size: 10px;
+  color: #8b7355;
+  margin-top: 2px;
+  opacity: 0.85;
 }
 
 /* Name input (edit mode) */
@@ -116,6 +138,24 @@
   pointer-events: none;
   white-space: nowrap;
   backdrop-filter: blur(4px);
+}
+
+.instructions .export-pdf-btn,
+.instructions .clear-tree-btn {
+  pointer-events: auto;
+  margin-left: 6px;
+  padding: 4px 10px;
+  border: 1px solid #c4a882;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #f5efe6;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.instructions .export-pdf-btn:hover,
+.instructions .clear-tree-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
 }
 
 /* ===== Controls panel styling ===== */

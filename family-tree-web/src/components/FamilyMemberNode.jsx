@@ -38,10 +38,20 @@ export default function FamilyMemberNode({ id, data }) {
     [commitName, data.label],
   );
 
+  const handlePositions = [15, 50, 85]; // % from left for multiple connection points
+
   return (
     <div className="family-node">
-      {/* Top handle — connect as child */}
-      <Handle type="target" position={Position.Top} />
+      {/* Top handles — connect as child (multiple so edges can be moved up/down) */}
+      {handlePositions.map((left, i) => (
+        <Handle
+          key={`target-${i}`}
+          id={`target-${i}`}
+          type="target"
+          position={Position.Top}
+          style={{ left: `${left}%`, transform: 'translate(-50%, 0)' }}
+        />
+      ))}
 
       {/* Delete button */}
       <button
@@ -75,8 +85,27 @@ export default function FamilyMemberNode({ id, data }) {
         </div>
       )}
 
-      {/* Bottom handle — connect as parent */}
-      <Handle type="source" position={Position.Bottom} />
+      {data.parentLabels?.length >= 2 && (
+        <div className="node-parents" title="Child of this couple">
+          Child of {data.parentLabels.join(' & ')}
+        </div>
+      )}
+      {data.generation != null && (
+        <div className="node-generation" title="Generation (same row = same generation)">
+          Gen {data.generation}
+        </div>
+      )}
+
+      {/* Bottom handles — connect as parent (multiple so edges can be moved up/down) */}
+      {handlePositions.map((left, i) => (
+        <Handle
+          key={`source-${i}`}
+          id={`source-${i}`}
+          type="source"
+          position={Position.Bottom}
+          style={{ left: `${left}%`, transform: 'translate(-50%, 0)' }}
+        />
+      ))}
     </div>
   );
 }
