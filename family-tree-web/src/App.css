@@ -1,0 +1,147 @@
+/* ===== Full-screen canvas with background image ===== */
+
+.reactflow-wrapper {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  background: url('/family-tree-background.jpg') center / cover no-repeat fixed;
+}
+
+/* Tint the React Flow background so dots are subtle over the image */
+.react-flow__background {
+  opacity: 0.3;
+}
+
+/* ===== Family member node card ===== */
+
+.family-node {
+  background: rgba(255, 255, 255, 0.92);
+  border: 2px solid #6b4c3b;
+  border-radius: 10px;
+  padding: 12px 18px;
+  min-width: 120px;
+  text-align: center;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  position: relative;
+  cursor: grab;
+  transition: box-shadow 0.15s;
+}
+
+.family-node:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
+}
+
+/* Name display */
+.node-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #3a2a1a;
+  user-select: none;
+  cursor: text;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.node-name:hover {
+  background: rgba(107, 76, 59, 0.08);
+}
+
+/* Name input (edit mode) */
+.node-name-input {
+  font-size: 14px;
+  font-weight: 600;
+  color: #3a2a1a;
+  border: 1px solid #6b4c3b;
+  border-radius: 4px;
+  padding: 2px 4px;
+  width: 100%;
+  text-align: center;
+  outline: none;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+/* Delete button */
+.node-delete {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: #c0392b;
+  color: white;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.family-node:hover .node-delete {
+  opacity: 1;
+}
+
+.node-delete:hover {
+  background: #e74c3c;
+}
+
+/* ===== Connection handles ===== */
+
+.react-flow__handle {
+  width: 10px;
+  height: 10px;
+  background: #6b4c3b;
+  border: 2px solid #fff;
+}
+
+/* ===== Instruction banner ===== */
+
+.instructions {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(58, 42, 26, 0.82);
+  color: #f5efe6;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  pointer-events: none;
+  white-space: nowrap;
+  backdrop-filter: blur(4px);
+}
+
+/* ===== Controls panel styling ===== */
+
+.react-flow__controls {
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 8px;
+  border: 1px solid #6b4c3b;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.react-flow__controls-button {
+  border-bottom: 1px solid #e0d5c7 !important;
+}
+
+/* ===== Selected edge highlight ===== */
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: #e74c3c !important;
+  stroke-width: 3px;
+}
+
+/* ===== Reset default body margin ===== */
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
