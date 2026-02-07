@@ -1,7 +1,7 @@
 # Copy to terraform.tfvars to override defaults (optional):
 # cp terraform.tfvars.example terraform.tfvars
 
-# aws_region = "us-east-2"
+# aws_region = "us-east-1"
 # domain     = "programmingwitharagon.com"
 # subdomain  = "ft"   # site will be ft.programmingwitharagon.com
 # Route53 zone is looked up by domain; no zone ID needed.

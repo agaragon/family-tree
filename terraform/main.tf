@@ -17,7 +17,7 @@ provider "aws" {
 locals {
   fqdn         = "${var.subdomain}.${var.domain}"
   s3_origin_id = "s3-${local.fqdn}"
-  # Bucket name: FQDN with only the last dot (before TLD) replaced by hyphen, e.g. ft.programmingwitharagon-com
+  # Bucket name: FQDN with only the last dot (before TLD) replaced by hyphen, e.g. ft.programmingwitharagon.com
   tld          = element(split(".", var.domain), length(split(".", var.domain)) - 1)
   bucket_name  = replace(local.fqdn, ".${local.tld}", "-${local.tld}")
 }

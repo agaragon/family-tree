@@ -5,7 +5,7 @@ cd "$(dirname "$0")/.."
 
 # Default deploy target: ft.programmingwitharagon.com (matches terraform/variables.tf)
 DEFAULT_DOMAIN="ft.programmingwitharagon.com"
-DEFAULT_S3_BUCKET="ft.programmingwitharagon-com"
+DEFAULT_S3_BUCKET="ft.programmingwitharagon.com"
 
 # S3_BUCKET and CLOUDFRONT_DISTRIBUTION_ID from env, terraform output, or defaults
 if [[ -z "${S3_BUCKET:-}" ]] || [[ -z "${CLOUDFRONT_DISTRIBUTION_ID:-}" ]]; then
@@ -36,7 +36,8 @@ echo "=== Build ==="
 (cd family-tree-web && npm run build)
 
 echo "=== Sync to S3 ==="
-aws s3 sync family-tree-web/dist/ "s3://${S3_BUCKET}/" --delete
+# Bucket is in us-east-1 (terraform main.tf uses provider aws.s3)
+aws s3 sync family-tree-web/dist/ "s3://${S3_BUCKET}/" --delete --region us-east-1
 
 echo "=== Invalidate CloudFront ==="
 aws cloudfront create-invalidation --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" --paths "/*"
