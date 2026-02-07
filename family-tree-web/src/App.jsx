@@ -14,6 +14,7 @@ import '@xyflow/react/dist/style.css';
 import html2pdf from 'html2pdf.js';
 import FamilyMemberNode from './components/FamilyMemberNode';
 import GenerationLinesNode from './components/GenerationLinesNode';
+import ParentForkEdge from './components/ParentForkEdge';
 import './App.css';
 
 const STORAGE_KEY = 'family-tree-data';
@@ -119,7 +120,7 @@ function FamilyTreeCanvas() {
     [setNodes],
   );
 
-  // Register the custom node types
+  // Register the custom node and edge types
   const nodeTypes = useMemo(
     () => ({
       familyMember: FamilyMemberNode,
@@ -127,6 +128,35 @@ function FamilyTreeCanvas() {
     }),
     [],
   );
+  const edgeTypes = useMemo(
+    () => ({ fork: ParentForkEdge }),
+    [],
+  );
+
+  // Enrich edges with junction for fork pattern when a child has two parents
+  const edgesForFlow = useMemo(() => {
+    const familyNodes = nodes.filter((n) => n.type !== 'generationLines');
+    const NODE_CENTER_X = 60;
+    const JUNCTION_OFFSET_Y = 40;
+    return edges.map((edge) => {
+      const toChild = edges.filter((e) => e.target === edge.target);
+      if (toChild.length !== 2) return edge;
+      const [p1, p2] = toChild.map((e) => e.source);
+      const n1 = familyNodes.find((n) => n.id === p1);
+      const n2 = familyNodes.find((n) => n.id === p2);
+      const child = familyNodes.find((n) => n.id === edge.target);
+      if (!n1 || !n2 || !child) return edge;
+      const junction = {
+        x: (n1.position.x + n2.position.x) / 2 + NODE_CENTER_X,
+        y: child.position.y - JUNCTION_OFFSET_Y,
+      };
+      return {
+        ...edge,
+        type: 'fork',
+        data: { ...edge.data, junction },
+      };
+    });
+  }, [nodes, edges]);
 
   // Add a new family member node where the user clicks on the canvas
   const onPaneClick = useCallback(
@@ -241,9 +271,10 @@ function FamilyTreeCanvas() {
       <div className="reactflow-wrapper">
         <ReactFlow
         nodes={nodesForFlow}
-        edges={edges}
+        edges={edgesForFlow}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        edgeTypes={edgeTypes}
         onConnect={onConnect}
         onPaneClick={onPaneClick}
         onViewportChange={({ x, y, zoom }) => setViewport({ x, y, zoom })}
