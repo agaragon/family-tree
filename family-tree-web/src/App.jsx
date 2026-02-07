@@ -1,4 +1,4 @@
-import { useCallback, useRef, useMemo, useEffect } from 'react';
+import { useCallback, useRef, useMemo, useEffect, useState } from 'react';
 import {
   ReactFlow,
   Controls,
@@ -21,18 +21,24 @@ const STORAGE_KEY = 'family-tree-data';
 let nodeId = 0;
 const getId = () => `member-${nodeId++}`;
 
+const defaultViewport = { x: 0, y: 0, zoom: 1 };
+
 function getInitialData() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { nodes: [], edges: [] };
+    if (!raw) return { nodes: [], edges: [], viewport: defaultViewport };
     const data = JSON.parse(raw);
     const nodes = data.nodes || [];
     const edges = data.edges || [];
+    const viewport =
+      data.viewport && typeof data.viewport.zoom === 'number'
+        ? { x: Number(data.viewport.x) || 0, y: Number(data.viewport.y) || 0, zoom: data.viewport.zoom }
+        : defaultViewport;
     const maxId = Math.max(0, ...nodes.map((n) => parseInt(String(n.id).replace('member-', ''), 10) || 0));
     nodeId = maxId + 1;
-    return { nodes, edges };
+    return { nodes, edges, viewport };
   } catch {
-    return { nodes: [], edges: [] };
+    return { nodes: [], edges: [], viewport: defaultViewport };
   }
 }
 
@@ -75,8 +81,9 @@ function FamilyTreeCanvas() {
   const { screenToFlowPosition } = useReactFlow();
   const [nodes, setNodes, onNodesChange] = useNodesState(initialData.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialData.edges);
+  const [viewport, setViewport] = useState(initialData.viewport);
 
-  // Persist to localStorage whenever nodes or edges change
+  // Persist to localStorage whenever nodes, edges or viewport change
   useEffect(() => {
     const payload = {
       nodes: nodes.map((n) => ({
@@ -86,9 +93,10 @@ function FamilyTreeCanvas() {
         data: { label: n.data?.label ?? 'Unnamed' },
       })),
       edges,
+      viewport: { x: viewport.x, y: viewport.y, zoom: viewport.zoom },
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  }, [nodes, edges]);
+  }, [nodes, edges, viewport]);
 
   // Delete a node and all its connected edges
   const deleteNode = useCallback(
@@ -213,6 +221,7 @@ function FamilyTreeCanvas() {
     nodeId = 0;
     setNodes([]);
     setEdges([]);
+    setViewport(defaultViewport);
     localStorage.removeItem(STORAGE_KEY);
   }, [setNodes, setEdges]);
 
@@ -228,30 +237,28 @@ function FamilyTreeCanvas() {
   }, []);
 
   return (
-    <div
-      className="reactflow-wrapper"
-      ref={reactFlowWrapper}
-      onKeyDown={onKeyDown}
-      tabIndex={0}
-    >
-      <ReactFlow
+    <div className="tree-frame" ref={reactFlowWrapper} onKeyDown={onKeyDown} tabIndex={0}>
+      <div className="reactflow-wrapper">
+        <ReactFlow
         nodes={nodesForFlow}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onPaneClick={onPaneClick}
+        onViewportChange={({ x, y, zoom }) => setViewport({ x, y, zoom })}
+        defaultViewport={initialData.viewport}
         nodeTypes={nodeTypes}
         fitView={false}
         deleteKeyCode={null} /* we handle deletion ourselves */
         proOptions={{ hideAttribution: true }}
       >
-        <Controls />
-        <Background variant="dots" gap={24} size={1} color="#c4a882" />
-      </ReactFlow>
+          <Controls />
+          <Background variant="dots" gap={24} size={1} color="#c4a882" />
+        </ReactFlow>
 
-      {/* Instruction banner */}
-      <div className="instructions">
+        {/* Instruction banner */}
+        <div className="instructions">
         Same row = same generation (siblings, cousins) &middot; Click to add
         member &middot; Double-click name to edit &middot; Connect handles
         (two parents → one child = couple) &middot; Delete to remove edge &middot;{' '}
@@ -262,6 +269,7 @@ function FamilyTreeCanvas() {
         <button type="button" className="clear-tree-btn" onClick={clearAll}>
           Clear tree
         </button>
+        </div>
       </div>
     </div>
   );
