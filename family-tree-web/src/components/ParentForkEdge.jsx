@@ -21,23 +21,11 @@ export default function ParentForkEdge({
   let path;
 
   if (junction) {
-    const [path1] = getSmoothStepPath({
-      sourceX,
-      sourceY,
-      targetX: junction.x,
-      targetY: junction.y,
-      sourcePosition,
-      targetPosition: Position.Top,
-    });
-    const [path2] = getSmoothStepPath({
-      sourceX: junction.x,
-      sourceY: junction.y,
-      targetX,
-      targetY,
-      sourcePosition: Position.Bottom,
-      targetPosition,
-    });
-    path = path1 + ' ' + path2.replace(/^M\s*[\d.-]+\s*[\d.-]+\s*/, '');
+    const jx = junction.x;
+    const jy = junction.y;
+    // Shared horizontal at jy so both parents meet on one line:
+    // source → (sourceX, jy) → (jx, jy) → (targetX, jy) → target
+    path = `M ${sourceX} ${sourceY} L ${sourceX} ${jy} L ${jx} ${jy} L ${targetX} ${jy} L ${targetX} ${targetY}`;
   } else {
     [path] = getSmoothStepPath({
       sourceX,
