@@ -22,7 +22,7 @@ if [[ -z "${CLOUDFRONT_DISTRIBUTION_ID:-}" ]] && command -v jq &>/dev/null; then
 fi
 
 if [[ -z "${CLOUDFRONT_DISTRIBUTION_ID:-}" ]]; then
-  echo "Set CLOUDFRONT_DISTRIBUTION_ID, or run 'terraform apply' in terraform/ so outputs exist."
+  echo "Set CLOUDFRONT_DISTRIBUTION_ID, or from repo root run: terraform -chdir=terraform apply"
   exit 1
 fi
 
