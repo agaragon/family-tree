@@ -3,9 +3,9 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-# Default deploy target: family-tree.programmingwitharagon.com (matches terraform/variables.tf)
-DEFAULT_DOMAIN="family-tree.programmingwitharagon.com"
-DEFAULT_S3_BUCKET="family-tree-programmingwitharagon-com"
+# Default deploy target: ft.programmingwitharagon.com (matches terraform/variables.tf)
+DEFAULT_DOMAIN="ft.programmingwitharagon.com"
+DEFAULT_S3_BUCKET="ft.programmingwitharagon-com"
 
 # S3_BUCKET and CLOUDFRONT_DISTRIBUTION_ID from env, terraform output, or defaults
 if [[ -z "${S3_BUCKET:-}" ]] || [[ -z "${CLOUDFRONT_DISTRIBUTION_ID:-}" ]]; then

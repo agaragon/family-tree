@@ -1,8 +1,7 @@
-# Copy to terraform.tfvars and fill in your Route53 zone ID:
+# Copy to terraform.tfvars to override defaults (optional):
 # cp terraform.tfvars.example terraform.tfvars
 
-# aws_region = "us-east-1"
+# aws_region = "us-east-2"
 # domain     = "programmingwitharagon.com"
-# subdomain  = "family-tree"
-
-route53_zone_id = "Z0123456789ABCDEFGHIJ"  # Your Route53 hosted zone ID for programmingwitharagon.com
+# subdomain  = "ft"   # site will be ft.programmingwitharagon.com
+# Route53 zone is looked up by domain; no zone ID needed.

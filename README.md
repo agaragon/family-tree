@@ -72,25 +72,21 @@ The site can be deployed to any domain using AWS (S3 + CloudFront + Route53) and
 
 ### One-time setup
 
-1. **Get your Route53 zone ID**  
-   In AWS Console → Route53 → Hosted zones, open your domain's hosted zone and copy the **Hosted zone ID** (e.g. `Z0123456789ABCDEFGHIJ`).
-
-2. **Configure Terraform**  
-   From the project root:
+1. **Configure Terraform (optional)**  
+   Defaults deploy to `ft.programmingwitharagon.com`. To use another domain, from the project root:
    ```bash
    cd terraform
    cp terraform.tfvars.example terraform.tfvars
    ```
-   Edit `terraform.tfvars` and set `route53_zone_id` to that value.  
-   Set `domain` and `subdomain` to your domain (e.g. `example.com` and `family-tree` for `family-tree.example.com`). Optionally set `aws_region`.
+   Edit `terraform.tfvars` and set `domain` and `subdomain` (e.g. `example.com` and `ft` for `ft.example.com`). Optionally set `aws_region`. The Route53 hosted zone is looked up by `domain`; no zone ID needed.
 
-3. **Create infrastructure**
+2. **Create infrastructure**
    ```bash
    terraform init
    terraform plan   # optional: review changes
    terraform apply
    ```
-   When prompted, type `yes`. Note the outputs: **url**, **s3_bucket**, **cloudfront_distribution_id**.
+   When prompted, type `yes`. Note the outputs: **url**, **s3_bucket**, **cloudfront_distribution_id**. Terraform will not prompt for variables if defaults or `terraform.tfvars` are used.
 
 ### Deploy (or update) the site
 

@@ -2,6 +2,12 @@ provider "aws" {
   region = var.aws_region
 }
 
+# S3 bucket in us-east-1 to avoid 301 when bucket was created there; CloudFront works with any region
+provider "aws" {
+  alias  = "s3"
+  region = "us-east-1"
+}
+
 # ACM for CloudFront must be in us-east-1
 provider "aws" {
   alias  = "acm"
@@ -9,17 +15,28 @@ provider "aws" {
 }
 
 locals {
-  fqdn = "${var.subdomain}.${var.domain}"
+  fqdn         = "${var.subdomain}.${var.domain}"
   s3_origin_id = "s3-${local.fqdn}"
+  # Bucket name: FQDN with only the last dot (before TLD) replaced by hyphen, e.g. ft.programmingwitharagon-com
+  tld          = element(split(".", var.domain), length(split(".", var.domain)) - 1)
+  bucket_name  = replace(local.fqdn, ".${local.tld}", "-${local.tld}")
 }
 
-# S3 bucket for static site
+# Look up Route53 hosted zone by domain (no manual zone ID needed)
+data "aws_route53_zone" "main" {
+  name         = "${var.domain}."
+  private_zone = false
+}
+
+# S3 bucket for static site (us-east-1 to match regional endpoint)
 resource "aws_s3_bucket" "web" {
-  bucket = replace("${var.subdomain}-${var.domain}", ".", "-")
+  provider = aws.s3
+  bucket   = local.bucket_name
 }
 
 resource "aws_s3_bucket_public_access_block" "web" {
-  bucket = aws_s3_bucket.web.id
+  provider = aws.s3
+  bucket   = aws_s3_bucket.web.id
 
   block_public_acls       = true
   block_public_policy     = true
@@ -37,6 +54,7 @@ resource "aws_cloudfront_origin_access_control" "web" {
 
 # Allow only CloudFront to read from S3 (policy applied after CloudFront exists)
 resource "aws_s3_bucket_policy" "web" {
+  provider   = aws.s3
   bucket     = aws_s3_bucket.web.id
   depends_on = [aws_s3_bucket_public_access_block.web, aws_cloudfront_distribution.web]
   policy = jsonencode({
@@ -121,7 +139,7 @@ resource "aws_route53_record" "cert_validation" {
       type   = dvo.resource_record_type
     }
   }
-  zone_id = var.route53_zone_id
+  zone_id = data.aws_route53_zone.main.zone_id
   name    = each.value.name
   type    = each.value.type
   records = [each.value.record]
@@ -136,7 +154,7 @@ resource "aws_acm_certificate_validation" "web" {
 
 # Route53 alias to CloudFront
 resource "aws_route53_record" "web" {
-  zone_id = var.route53_zone_id
+  zone_id = data.aws_route53_zone.main.zone_id
   name    = local.fqdn
   type    = "A"
   alias {
@@ -147,7 +165,7 @@ resource "aws_route53_record" "web" {
 }
 
 resource "aws_route53_record" "web_aaaa" {
-  zone_id = var.route53_zone_id
+  zone_id = data.aws_route53_zone.main.zone_id
   name    = local.fqdn
   type    = "AAAA"
   alias {
