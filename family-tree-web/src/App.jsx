@@ -189,10 +189,6 @@ function FamilyTreeCanvas() {
     );
     const withCallbacks = familyNodes.map((n) => ({
       ...n,
-      position: {
-        x: n.position.x,
-        y: generations[n.id] * ROW_HEIGHT,
-      },
       data: {
         ...n.data,
         onDelete: deleteNode,
