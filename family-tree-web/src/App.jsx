@@ -57,7 +57,7 @@ const TOUR_STEPS = [
   { title: 'Adicionar membros', text: 'Clique em um espaço vazio do canvas para adicionar um novo membro.' },
   { title: 'Editar nomes', text: 'Clique duas vezes no nome de um membro para editar (um clique em dispositivos touch). Enter confirma, Escape cancela.' },
   { title: 'Remover membros', text: 'Clique no botão × no canto do nó para excluir um membro.' },
-  { title: 'Conectar pais e filhos', text: 'Arraste da alça inferior (fonte) de um pai até a alça superior (alvo) de um filho. Conecte dois pais ao mesmo filho para representar um casal.' },
+  { title: 'Conectar pais e filhos', text: 'Arraste da alça de um nó até outro ou clique em um nó e depois em outro para criar a conexão. Conecte dois pais ao mesmo filho para representar um casal.' },
   { title: 'Remover conexões', text: 'Selecione uma aresta e pressione Delete ou Backspace.' },
   { title: 'Reposicionar e navegar', text: 'Arraste os nós para organizar. Use o mouse ou toque para pan e zoom no canvas.' },
   { title: 'Auto-salvamento', text: 'A árvore é salva automaticamente no armazenamento local.' },
@@ -84,9 +84,11 @@ function FamilyTreeCanvas() {
   );
   const [bgImage, setBgImage] = useState(loadBackgroundImage);
   const [advancedSettingsOpen, setAdvancedSettingsOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [tourStep, setTourStep] = useState(() =>
     typeof window !== 'undefined' && localStorage.getItem(TOUR_SEEN_KEY) ? 0 : 1,
   );
+  const [pendingConnectionSource, setPendingConnectionSource] = useState(null);
 
   const closeTour = useCallback(() => {
     if (typeof window !== 'undefined') localStorage.setItem(TOUR_SEEN_KEY, '1');
@@ -166,6 +168,7 @@ function FamilyTreeCanvas() {
 
   const onPaneClick = useCallback(
     (event) => {
+      setPendingConnectionSource(null);
       if (dragJustEndedRef.current) {
         dragJustEndedRef.current = false;
         return;
@@ -203,8 +206,9 @@ function FamilyTreeCanvas() {
     dragJustEndedRef.current = true;
   }, []);
 
-  const onConnect = useCallback(
+  const addEdgeConnection = useCallback(
     (params) => {
+      if (params.source === params.target) return;
       setEdges((eds) =>
         addEdge(
           {
@@ -223,6 +227,41 @@ function FamilyTreeCanvas() {
     [setEdges, settings.edgeStrokeColor, settings.edgeStrokeWidth],
   );
 
+  const onConnect = useCallback(
+    (params) => addEdgeConnection(params),
+    [addEdgeConnection],
+  );
+
+  const onNodeClick = useCallback(
+    (_, node) => {
+      if (node.type === NODE_TYPES.GENERATION_LINES) return;
+      const id = node.id;
+      if (pendingConnectionSource == null) {
+        setPendingConnectionSource(id);
+        return;
+      }
+      if (pendingConnectionSource === id) {
+        setPendingConnectionSource(null);
+        return;
+      }
+      const posA = familyNodePositionsRef.current.get(pendingConnectionSource);
+      const posB = node.position;
+      if (!posA) {
+        setPendingConnectionSource(null);
+        return;
+      }
+      const aboveFirst =
+        posA.y < posB.y ||
+        (posA.y === posB.y && posA.x <= posB.x);
+      const sourceId = aboveFirst ? pendingConnectionSource : id;
+      const targetId = aboveFirst ? id : pendingConnectionSource;
+      connectionJustEndedRef.current = true;
+      addEdgeConnection({ source: sourceId, target: targetId });
+      setPendingConnectionSource(null);
+    },
+    [pendingConnectionSource, addEdgeConnection],
+  );
+
   const onConnectEnd = useCallback(() => {
     connectionJustEndedRef.current = true;
   }, []);
@@ -237,6 +276,12 @@ function FamilyTreeCanvas() {
   );
 
   const familyNodes = nodes.filter((n) => n.type !== NODE_TYPES.GENERATION_LINES);
+  const familyNodePositionsRef = useRef(new Map());
+  useEffect(() => {
+    familyNodePositionsRef.current = new Map(
+      familyNodes.map((n) => [n.id, n.position]),
+    );
+  }, [familyNodes]);
   const generations = useMemo(
     () => getGenerations(familyNodes, edges),
     [familyNodes, edges],
@@ -265,6 +310,7 @@ function FamilyTreeCanvas() {
         generation: generations[n.id],
         nodeSize: settings.nodeSize,
         nodeColor: settings.nodeColor,
+        isPendingConnectionSource: pendingConnectionSource === n.id,
       },
     }));
     const linesNode = {
@@ -276,7 +322,7 @@ function FamilyTreeCanvas() {
       selectable: false,
     };
     return [linesNode, ...withCallbacks];
-  }, [familyNodes, edges, generations, settings.nodeSize, settings.nodeColor, deleteNode, renameNode, getParentLabels]);
+  }, [familyNodes, edges, generations, settings.nodeSize, settings.nodeColor, deleteNode, renameNode, getParentLabels, pendingConnectionSource]);
 
   const alignNodes = useCallback(() => {
     const positions = computeAlignPositions(familyNodes, edges, generations);
@@ -339,7 +385,7 @@ function FamilyTreeCanvas() {
 
   return (
     <div
-      className="tree-frame"
+      className={`tree-frame${mobileMenuOpen ? ' instructions-open' : ''}`}
       ref={reactFlowWrapper}
       onKeyDown={onKeyDown}
       tabIndex={0}
@@ -369,6 +415,7 @@ function FamilyTreeCanvas() {
           edgeTypes={edgeTypes}
           onConnect={onConnect}
           onConnectEnd={onConnectEnd}
+          onNodeClick={onNodeClick}
           connectionRadius={500}
           onPaneClick={onPaneClick}
           onViewportChange={({ x, y, zoom }) => setViewport({ x, y, zoom })}
@@ -384,14 +431,39 @@ function FamilyTreeCanvas() {
         </ReactFlow>
       </div>
 
+      {mobileMenuOpen && (
+        <div
+          className="instructions-backdrop"
+          aria-hidden
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+      <button
+        type="button"
+        className="mobile-menu-toggle"
+        aria-label={mobileMenuOpen ? 'Fechar menu' : 'Abrir menu'}
+        aria-expanded={mobileMenuOpen}
+        onClick={() => setMobileMenuOpen((o) => !o)}
+      >
+        <span className="hamburger-line" />
+        <span className="hamburger-line" />
+        <span className="hamburger-line" />
+      </button>
       <aside className="instructions">
         <div className="instructions-tips">
           Mesma linha = mesma geração (irmãos, primos) &middot; Clique para
           adicionar membro &middot; Clique duas vezes no nome para editar
-          &middot; Conecte as alças (dois pais → um filho = casal) &middot;
+          &middot; Conecte: arraste da alça ou clique em dois nós &middot;
           Delete para remover conexão
         </div>
-        <div className="instructions-actions">
+        <div
+          className="instructions-actions"
+          onClick={(e) => {
+            if (e.target.closest('button') && !e.target.closest('button[data-no-close]')) {
+              setMobileMenuOpen(false);
+            }
+          }}
+        >
           <button
             type="button"
             className="export-pdf-btn"
@@ -409,6 +481,7 @@ function FamilyTreeCanvas() {
           <button
             type="button"
             className="export-pdf-btn"
+            data-no-close
             onClick={() => setAdvancedSettingsOpen((o) => !o)}
           >
             Configurações avançadas
@@ -491,7 +564,10 @@ function FamilyTreeCanvas() {
           </button>
           <select
             value={pdfPaperSize}
-            onChange={(e) => setPdfPaperSize(e.target.value)}
+            onChange={(e) => {
+              setPdfPaperSize(e.target.value);
+              setMobileMenuOpen(false);
+            }}
             className="export-pdf-btn"
             aria-label="Tamanho do papel para PDF"
           >
@@ -519,15 +595,15 @@ function FamilyTreeCanvas() {
               <div className="tour-footer-nav">
                 <span className="tour-progress">{tourStep} / {TOUR_STEPS.length}</span>
                 <div className="tour-buttons">
-                  <button type="button" className="export-pdf-btn" onClick={() => setTourStep((s) => Math.max(1, s - 1))} disabled={tourStep === 1}>
+                  <button type="button" className="tour-nav-btn" onClick={() => setTourStep((s) => Math.max(1, s - 1))} disabled={tourStep === 1}>
                     Anterior
                   </button>
                   {tourStep < TOUR_STEPS.length ? (
-                    <button type="button" className="export-pdf-btn" onClick={() => setTourStep((s) => s + 1)}>
+                    <button type="button" className="tour-nav-btn tour-nav-btn-primary" onClick={() => setTourStep((s) => s + 1)}>
                       Próximo
                     </button>
                   ) : (
-                    <button type="button" className="export-pdf-btn" onClick={closeTour}>
+                    <button type="button" className="tour-nav-btn tour-nav-btn-primary" onClick={closeTour}>
                       Fechar
                     </button>
                   )}

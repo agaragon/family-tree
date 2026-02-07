@@ -2,14 +2,13 @@
  * Layout service — single responsibility: compute generations and edge junctions.
  * Pure functions over nodes/edges; no side effects.
  */
-import { NEW_MEMBER_NODE_HALF_WIDTH, NEW_MEMBER_NODE_HALF_HEIGHT } from '../domain';
-
 const MIN_H_GAP = 40;
 const MIN_V_GAP = 80;
-const NODE_WIDTH = NEW_MEMBER_NODE_HALF_WIDTH * 2;
-const NODE_HEIGHT = NEW_MEMBER_NODE_HALF_HEIGHT * 2;
-const COL_GAP = NODE_WIDTH + MIN_H_GAP;
-const ALIGN_ROW_HEIGHT = NODE_HEIGHT + MIN_V_GAP;
+/** Assumed node size for spacing; larger than base to avoid overlap with long names/scaling. */
+const LAYOUT_NODE_WIDTH = 180;
+const LAYOUT_NODE_HEIGHT = 70;
+const COL_GAP = LAYOUT_NODE_WIDTH + MIN_H_GAP;
+const ALIGN_ROW_HEIGHT = LAYOUT_NODE_HEIGHT + MIN_V_GAP;
 
 /**
  * Compute aligned positions for family nodes: one row per generation, symmetric columns.

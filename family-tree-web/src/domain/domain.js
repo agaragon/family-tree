@@ -26,7 +26,7 @@ export const defaultSettings = Object.freeze({
   nodeSize: 1,
   nodeColor: 'rgba(255,255,255,0.92)',
   edgeStrokeWidth: 2,
-  edgeStrokeColor: '#6b4c3b',
+  edgeStrokeColor: '#b9724b',
 });
 
 /** Persisted payload: nodes (minimal), edges, viewport, settings */
